@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Sensor Model Data Collector</string>
+    <string name="dummy_button">Dummy Button</string>
+    <string name="wifi_scan_text">WiFi Scan</string>
+    <string name="myTextView">Hello World</string>
+    <string name="scan_text">Scanning....</string>
+    <string name="perform_scan">Start Scan</string>
+
+</resources>
