@@ -1,6 +1,6 @@
 package com.clarkson.sensormodeldatacollector;
 
-public class WiFiScanResult implements Comparable{
+public class WiFiScanResult implements Comparable<Object>{
 	    String mSSID;
 	    int mReceivedSignalStrength_dBm;
 	    int frequency_MHz;

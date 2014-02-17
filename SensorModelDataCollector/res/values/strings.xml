@@ -3,9 +3,12 @@
 
     <string name="app_name">Sensor Model Data Collector</string>
     <string name="dummy_button">Dummy Button</string>
-    <string name="wifi_scan_text">WiFi Scan</string>
+    <string name="wifi_scan_text">Start WiFi Scan</string>
     <string name="myTextView">Hello World</string>
     <string name="scan_text">Scanning....</string>
     <string name="perform_scan">Start Scan</string>
+    <string name="stop_scan">Stop Scan</string>
+    <string name="timer_label">Timer Period (ms)</string>
+    <string name="timer_milliseconds_value">100</string>
 
 </resources>
