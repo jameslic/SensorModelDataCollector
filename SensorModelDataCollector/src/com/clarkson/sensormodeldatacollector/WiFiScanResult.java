@@ -1,12 +1,20 @@
 package com.clarkson.sensormodeldatacollector;
 
+import java.util.LinkedList;
+import java.util.Queue;
+
 public class WiFiScanResult implements Comparable<Object>{
 	    String mSSID;
-	    int mReceivedSignalStrength_dBm;
+	    Queue<TimestampedRSS> mTimestampedRSSValues = new LinkedList<TimestampedRSS>();
+	    int mLastAddedTimestamp;
+	    //int mReceivedSignalStrength_dBm;
 	    int frequency_MHz;
 	    String channel;
 	    String mac_address;
 	    
+	    public WiFiScanResult()
+	    {
+	    }
 
 	    @Override
 		public int hashCode() {
@@ -41,12 +49,34 @@ public class WiFiScanResult implements Comparable<Object>{
 	        this.mSSID = name;
 	    }
 
-	    public int getRSS() {
-	        return mReceivedSignalStrength_dBm;
+	    public int getRSS() 
+	    {
+	    	int returned_RSS = 0;
+	    	if(mTimestampedRSSValues.size() > 0)
+	    	{
+	    		returned_RSS = mTimestampedRSSValues.element().mReceivedSignalStrength_dBm;
+	    	}//if
+	        return returned_RSS;
+	    }//getRSS
+	    
+	    public TimestampedRSS getLatestTimestampedRSS()
+	    {
+	    	return mTimestampedRSSValues.element();
+	    }
+	    
+	    public Queue<TimestampedRSS> getAllRSS()
+	    {
+	    	return mTimestampedRSSValues;
 	    }
 
-	    public void setRSS(int rss) {
-	        this.mReceivedSignalStrength_dBm = rss;
+	    public void setRSS(int rss, long timestamp) {
+	    	mTimestampedRSSValues.add(new TimestampedRSS(rss, timestamp));
+	        //this.mReceivedSignalStrength_dBm = rss;
+	    }
+	    
+	    public void setRSS(TimestampedRSS newRSSEntry) {
+	    	mTimestampedRSSValues.add(newRSSEntry);
+	        //this.mReceivedSignalStrength_dBm = rss;
 	    }
 
 		public int getFrequency() {
@@ -83,6 +113,6 @@ public class WiFiScanResult implements Comparable<Object>{
 			    if (!(anotherScanResult instanceof WiFiScanResult))
 			      throw new ClassCastException("A WiFiScanResult object expected.");
 			    int another_scan_result_RSS = ((WiFiScanResult) anotherScanResult).getRSS();  
-			    return another_scan_result_RSS - this.mReceivedSignalStrength_dBm;    
+			    return another_scan_result_RSS - this.getRSS();    
 		}
 }
