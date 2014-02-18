@@ -147,7 +147,7 @@ public class WiFiScanActivity extends Activity implements OnClickListener
             //dummy_item.setFrequency(i*1000);
                 
             //Add default item to the array list
-            //mScanResultsArrayList.add( default_wifi_scan_result );
+            mScanResultsArrayList.add( default_wifi_scan_result );
         }//for
          
     }//setWiFiScanListData
