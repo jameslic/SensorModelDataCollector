@@ -13,8 +13,10 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;    
+import android.content.DialogInterface;
 import android.content.Intent;     
 import android.content.IntentFilter;    
 import android.content.res.Resources;
@@ -63,6 +65,7 @@ public class WiFiScanActivity extends Activity implements OnClickListener
     WiFiScanResultAdapter mWifiScanResultAdapter;
     //Public member variable tracking the current number of scans count
     public int mNumberOfScansCounter = 0;    
+    AlertDialog.Builder mWriteToFileDialog;
     
     final int NUMBER_DEFAULT_SCAN_ITEMS = 2;
     //Historical hashmap to continue to collect RSS values for APs we encounter in multiple scans
@@ -82,6 +85,8 @@ public class WiFiScanActivity extends Activity implements OnClickListener
     //Defined handler for the wifi scan timer task
     private Handler mScanTimerHandler = new Handler();
 
+    public boolean mWriteToCSVFile = false;
+    
     /** 
      * Called when the activity is first created
      * 
@@ -115,6 +120,42 @@ public class WiFiScanActivity extends Activity implements OnClickListener
         mWifiScanResultAdapter = new WiFiScanResultAdapter(this, mScanResultsArrayList, res);
         mScanResultsListView.setAdapter(mWifiScanResultAdapter);
 
+        
+        mWriteToFileDialog = new AlertDialog.Builder(
+                WiFiScanActivity.this);
+
+        // Setting Dialog Title
+        mWriteToFileDialog.setTitle("Confirm Write To File");
+
+        // Setting Dialog Message
+        mWriteToFileDialog.setMessage("Would you like to capture this AP's scan results in a CSV file?");
+
+        // Setting Icon to Dialog
+        mWriteToFileDialog.setIcon(R.drawable.new_document);
+
+        // Setting Positive "Yes" Btn
+        mWriteToFileDialog.setPositiveButton("YES", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        // Write your code here to execute after dialog
+                    	mWriteToCSVFile = true;
+                        Toast.makeText(getApplicationContext(),
+                                "(Not Yet Implemented!)Writing to SD Card...", Toast.LENGTH_SHORT)
+                                .show();
+                    }
+                });
+        // Setting Negative "NO" Btn
+        mWriteToFileDialog.setNegativeButton("NO",
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        // Write your code here to execute after dialog
+                    	mWriteToCSVFile = false;
+                        /*Toast.makeText(getApplicationContext(),
+                                "You clicked on NO", Toast.LENGTH_SHORT)
+                                .show();*/
+                        dialog.cancel();
+                    }
+                });
+        
         registerReceiver(new BroadcastReceiver()
         {
             @Override
@@ -295,42 +336,43 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 
        // SHOW ALERT                  
         Queue<TimestampedRSS> all_rss_values = tempValues.getAllRSS();
-        String rss_string = "\nRSS: ";
+        String rss_string = "";
         Iterator<TimestampedRSS> rss_iterator = all_rss_values.iterator();
 
         while (rss_iterator.hasNext() == true)
         {
         	Log.d(getLocalClassName(), "Step 10A: RSS Strings Assembled");
-        	rss_string = rss_string + (rss_iterator.next().toString()) + ", ";        	
+        	rss_string = rss_string + (rss_iterator.next().toString()) + ",";        	
         }
-        /*try {
-            String TestString="";
+        
+        // Showing Alert Dialog
+        mWriteToFileDialog.show();
+        if(mWriteToCSVFile == true)
+        {
+        //try {
+            String outputString="SSID,Channel,Frequency,MAC,RSS_Values\n";
 
-            FileOutputStream fOut = openFileOutput(filename, MODE_WORLD_READABLE);
+            //FileOutputStream fOut = openFileOutput(tempValues.mSSID+"_"+tempValues.mLastAddedTimestamp+".csv", MODE_WORLD_READABLE);
 
-            OutputStreamWriter osw = new OutputStreamWriter(fOut); 
+            //OutputStreamWriter osw = new OutputStreamWriter(fOut); 
 
-               // Write the string to the file
-             for( i=1; i<total_row; i++)
-                {
-
-                    for( j=1; j<total_col; j++)
-                    {
-                        TestString+=table[i][j].getText().toString();        // to pass in every widget a context of activity (necessary) 
-                        TestString += " ,";
-                    }
-                     TestString+="\n";
-                }
-             Log.v("the string is",TestString);
-             osw.write(TestString);
-             osw.flush();
-             osw.close();
-            }
-            catch (IOException ioe) 
-              {ioe.printStackTrace();}*/
+            outputString += tempValues.mSSID + ",";
+            outputString += tempValues.mSSID + ",";
+            outputString += tempValues.mSSID + ",";
+            outputString += tempValues.mSSID + ",";
+            outputString += rss_string + "\n";
+               
+             Log.d("the string is: ",outputString);
+             //osw.write(outputString);
+             //osw.flush();
+             //osw.close();
+         //   }
+            //catch (IOException ioe) 
+            //  {ioe.printStackTrace();}
+        }
         Toast.makeText(this,
                 ""+tempValues.getSSID()
-                  + rss_string
+                  + "\nRSS: " + rss_string
                   +"\nFreq: "+tempValues.getFrequency()
                   + "\nChan: "+tempValues.getChannel()
                   + "\nMAC: " + tempValues.getMac_address(),
