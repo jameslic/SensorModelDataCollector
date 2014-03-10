@@ -1,8 +1,12 @@
 package com.clarkson.sensormodeldatacollector;    
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;    
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;    
 import java.util.Queue;
 import java.util.Timer;
@@ -163,9 +167,11 @@ public class WiFiScanActivity extends Activity implements OnClickListener
     {
     	Log.d(getLocalClassName(), "Step 5");
     	
-    	mScanResultsArrayList.clear();
+    	
     	if(mStartStopScanButton.getText().toString().equals(getResources().getString(R.string.perform_scan)))
     	{
+    		mScanResultsArrayList.clear();
+    		mWifiScanResultAdapter.disableItemsSelection();
     		Log.d(getLocalClassName(), "Step 5.1");
     	   //startTime = SystemClock.uptimeMillis();
     	   mStartStopScanButton.setText(R.string.stop_scan);
@@ -173,6 +179,7 @@ public class WiFiScanActivity extends Activity implements OnClickListener
     	}//if
     	else
     	{
+    		mWifiScanResultAdapter.enableItemsSelection();
     		Log.d(getLocalClassName(), "Step 5.2");
     		//Halt the wifi scan timer task
     		mTimerTask.cancel();
@@ -180,6 +187,7 @@ public class WiFiScanActivity extends Activity implements OnClickListener
     		mStartStopScanButton.setText(R.string.perform_scan);
     		//Reset the scan counter
     		mNumberOfScansCounter = 0;
+    		
     	}//else
     }//onClick
     
@@ -282,15 +290,44 @@ public class WiFiScanActivity extends Activity implements OnClickListener
     /*****************  This function used by WiFiScanResultAdapter ****************/
     public void onItemClick(int mPosition)
     {
+    	Log.d(getLocalClassName(), "Step 10: OnItemClick");
         WiFiScanResult tempValues = ( WiFiScanResult ) mScanResultsArrayList.get(mPosition);
 
        // SHOW ALERT                  
         Queue<TimestampedRSS> all_rss_values = tempValues.getAllRSS();
         String rss_string = "\nRSS: ";
-        while (all_rss_values.size() > 0)
+        Iterator<TimestampedRSS> rss_iterator = all_rss_values.iterator();
+
+        while (rss_iterator.hasNext() == true)
         {
-        	rss_string = rss_string + (all_rss_values.remove().mReceivedSignalStrength_dBm) + ", ";
+        	Log.d(getLocalClassName(), "Step 10A: RSS Strings Assembled");
+        	rss_string = rss_string + (rss_iterator.next().toString()) + ", ";        	
         }
+        /*try {
+            String TestString="";
+
+            FileOutputStream fOut = openFileOutput(filename, MODE_WORLD_READABLE);
+
+            OutputStreamWriter osw = new OutputStreamWriter(fOut); 
+
+               // Write the string to the file
+             for( i=1; i<total_row; i++)
+                {
+
+                    for( j=1; j<total_col; j++)
+                    {
+                        TestString+=table[i][j].getText().toString();        // to pass in every widget a context of activity (necessary) 
+                        TestString += " ,";
+                    }
+                     TestString+="\n";
+                }
+             Log.v("the string is",TestString);
+             osw.write(TestString);
+             osw.flush();
+             osw.close();
+            }
+            catch (IOException ioe) 
+              {ioe.printStackTrace();}*/
         Toast.makeText(this,
                 ""+tempValues.getSSID()
                   + rss_string

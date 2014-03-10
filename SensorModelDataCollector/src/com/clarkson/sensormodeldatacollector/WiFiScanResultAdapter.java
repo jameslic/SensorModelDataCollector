@@ -23,7 +23,7 @@ import android.widget.TextView;
 	         public Resources res;
 	         WiFiScanResult tempValues=null;
 	         int i=0;
-	          
+	          public boolean mAreItemsSelectable = false;
 	         /*************  CustomAdapter Constructor *****************/
 	         public WiFiScanResultAdapter(Activity a, ArrayList<WiFiScanResult> d,Resources resLocal) {
 	              
@@ -38,6 +38,16 @@ import android.widget.TextView;
 	              
 	         }
 	      
+	         public void enableItemsSelection()
+	         {
+	        	 mAreItemsSelectable = true;
+	         }
+	         
+	         public void disableItemsSelection()
+	         {
+	        	 mAreItemsSelectable = false;
+	         }
+	         
 	         /******** What is the size of Passed Arraylist Size ************/
 	         public int getCount() {
 	              
@@ -54,6 +64,15 @@ import android.widget.TextView;
 	             return position;
 	         }
 	          
+	         
+	         @Override
+	         public boolean areAllItemsEnabled()
+	                         {
+
+	         return mAreItemsSelectable;
+
+	         }
+	         
 	         /********* Create a holder Class to contain inflated xml file elements *********/
 	         public static class ViewHolder{
 	              

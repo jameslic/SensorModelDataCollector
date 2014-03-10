@@ -57,4 +57,10 @@ public class TimestampedRSS implements Comparable<Object>
 		    long another_timestamped_rss = ((TimestampedRSS) anotherTimestampedRSS).getTimestamp();  
 		    return (int)(another_timestamped_rss - this.mTimestamp);    
 	}
+	
+	@Override 
+	public String toString()
+	{
+		return String.valueOf(mReceivedSignalStrength_dBm);
+	}	
 }
