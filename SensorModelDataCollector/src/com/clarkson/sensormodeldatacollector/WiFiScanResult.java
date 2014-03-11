@@ -6,7 +6,7 @@ import java.util.Queue;
 public class WiFiScanResult implements Comparable<Object>{
 	    String mSSID;
 	    Queue<TimestampedRSS> mTimestampedRSSValues = new LinkedList<TimestampedRSS>();
-	    int mLastAddedTimestamp;
+	    long mLastAddedTimestamp;
 	    //int mReceivedSignalStrength_dBm;
 	    int frequency_MHz;
 	    String channel;
@@ -85,10 +85,23 @@ public class WiFiScanResult implements Comparable<Object>{
 
 		public void setFrequency(int frequency) {
 			this.frequency_MHz = frequency;
+			if (frequency_MHz >= 2412 && frequency_MHz <= 2484) 
+		    {
+		        channel = String.valueOf((frequency_MHz - 2412) / 5 + 1);
+		    } 
+		    else if (frequency_MHz >= 5170 && frequency_MHz <= 5825) 
+		    {
+		        channel = String.valueOf((frequency_MHz - 5170) / 5 + 34);
+		    } 
+		    else 
+		    {
+		        channel = null;
+		    }
 		}
 
-		public String getChannel() {
-			return channel;
+		public String getChannel() 
+		{
+		   return channel;	    
 		}
 
 		public void setChannel(String channel) {
