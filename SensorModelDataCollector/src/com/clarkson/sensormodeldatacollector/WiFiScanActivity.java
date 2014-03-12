@@ -1,6 +1,7 @@
 package com.clarkson.sensormodeldatacollector;    
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
@@ -12,6 +13,7 @@ import java.util.List;
 import java.util.Queue;
 import java.util.Timer;
 import java.util.TimerTask;
+
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -90,6 +92,7 @@ public class WiFiScanActivity extends Activity implements OnClickListener
     //Defined handler for the wifi scan timer task
     private Handler mScanTimerHandler = new Handler();
     BroadcastReceiver mBroadcastReceiver;
+    public long mMillisecondsSinceBoot = 0;
 
     public boolean mWriteToCSVFile = false;
     
@@ -146,9 +149,20 @@ public class WiFiScanActivity extends Activity implements OnClickListener
                     	mWriteToCSVFile = true;
                     	
                         Toast.makeText(getApplicationContext(),
-                                "(Not Yet Implemented!)Writing to SD Card...", Toast.LENGTH_SHORT)
+                                "Writing to SD Card...", Toast.LENGTH_SHORT)
                                 .show();
-                        writeAPDataToCSVFile();
+                        if(writeAPDataToCSVFile() == true)
+                        {
+                        	Toast.makeText(getApplicationContext(),
+                                    "File written successfully!", Toast.LENGTH_SHORT)
+                                    .show();
+                        }//if
+                        else
+                        {
+                        	Toast.makeText(getApplicationContext(),
+                                    "Writing file to SD card failed!", Toast.LENGTH_SHORT)
+                                    .show();
+                        }
                     }
                 });
         // Setting Negative "NO" Btn
@@ -193,7 +207,6 @@ public class WiFiScanActivity extends Activity implements OnClickListener
      */    
     public void setWiFiScanListData()
     {         
-    	long milliseconds_since_boot = 0;
         for (int i = 0; i < NUMBER_DEFAULT_SCAN_ITEMS; i++) 
         {
         	Log.d(getLocalClassName(), "Filling default item#"+i);
@@ -201,10 +214,10 @@ public class WiFiScanActivity extends Activity implements OnClickListener
                  
             //Set the wifi scan result members
             
-            milliseconds_since_boot = SystemClock.uptimeMillis();
-            Log.d(getLocalClassName(), "SystemClock: "+milliseconds_since_boot);
+            mMillisecondsSinceBoot = SystemClock.uptimeMillis();
+            Log.d(getLocalClassName(), "SystemClock: "+mMillisecondsSinceBoot);
             default_wifi_scan_result.setSSID("Test SSID#"+i);
-            default_wifi_scan_result.setRSS(i, milliseconds_since_boot);
+            default_wifi_scan_result.setRSS(i, mMillisecondsSinceBoot);
             //dummy_item.setFrequency(i*1000);
                 
             //Add default item to the array list
@@ -315,8 +328,8 @@ public class WiFiScanActivity extends Activity implements OnClickListener
                 //item.put(ITEM_KEY, results.get(size).SSID + "  " + results.get(size).capabilities);
                 //Set the SSID (Name) for the scan result
                 scan_result_item.setSSID(mWifiManagerScanResults.get(mWifiManagerScanResultsCount).SSID);
-                //Set the RSS (signal strength level)
-                scan_result_item.setRSS(mWifiManagerScanResults.get(mWifiManagerScanResultsCount).level, SystemClock.uptimeMillis());
+                //Set the RSS (signal strength level) and timestamp normalized to program start time
+                scan_result_item.setRSS(mWifiManagerScanResults.get(mWifiManagerScanResultsCount).level, SystemClock.uptimeMillis()-mMillisecondsSinceBoot);
                 //Set the BSSID (Mac Address)
                 scan_result_item.setMac_address(mWifiManagerScanResults.get(mWifiManagerScanResultsCount).BSSID);
                 //Set the frequency
@@ -383,49 +396,73 @@ public class WiFiScanActivity extends Activity implements OnClickListener
     }
     
     @SuppressLint("SdCardPath")
-	void writeAPDataToCSVFile()
+	boolean writeAPDataToCSVFile()
     {
-    	WiFiScanResult tempValues = ( WiFiScanResult ) mScanResultsArrayList.get(mCurrentlySelectedItemIndex);
-    	if(mWriteToCSVFile == true && Environment.getExternalStorageState() == Environment.MEDIA_MOUNTED)        
+    	boolean file_written_successfully = false;
+    	WiFiScanResult selected_AP_scan_result_data = ( WiFiScanResult ) mScanResultsArrayList.get(mCurrentlySelectedItemIndex);
+    	if(mWriteToCSVFile == true && Environment.getExternalStorageState() != Environment.MEDIA_MOUNTED_READ_ONLY)        
         {
         try {
-            String outputString="SSID,Channel,Frequency,MAC,RSS_Values\n";
+            String output_string="SSID,Channel,Frequency,MAC,RSS,Timestamp,(1:N)\n";
             Log.d(getLocalClassName(), "Step 11A: Logging to CSV file");
-            String filename = Environment.getExternalStorageDirectory().getPath()+tempValues.mSSID+"_"+tempValues.getLatestTimestampedRSS().mTimestamp+".csv";
             
-            File myFile = new File(Environment
-                    .getExternalStorageDirectory(), filename);
-            if (!myFile.exists())
-                myFile.createNewFile();
+            File output_folder = new File(Environment.getExternalStorageDirectory() + File.separator + "SensorModelDataCollector");
+            boolean folder_success = true;
+            if (!output_folder.exists()) {
+            	folder_success = output_folder.mkdir();
+            }
             
-            
-            if(myFile.canWrite() == true)
+            if(folder_success == true)
             {
-               FileOutputStream file_writer = new FileOutputStream(filename);
+            	String output_filename = selected_AP_scan_result_data.mSSID+"_"+selected_AP_scan_result_data.getLatestTimestampedRSS().mTimestamp+".csv";
+            
+            File output_file = new File(output_folder, output_filename);
+            if (output_file.exists() == false)
+            {
+            	output_file.createNewFile();
+            }//if - file doesn't exist, create it
+            
+            
+            if(output_file.canWrite() == true)
+            {
+            	FileWriter output_file_writer = new FileWriter(output_file);
 
-               outputString += tempValues.mSSID + ",";
-               outputString += tempValues.channel + ",";
-               outputString += tempValues.frequency_MHz + ",";
-               outputString += tempValues.getMac_address() + ",";
-               outputString += mCurrentlySelectedItemRSSString + "\n";
+               output_string += selected_AP_scan_result_data.mSSID + ",";
+               output_string += selected_AP_scan_result_data.channel + ",";
+               output_string += selected_AP_scan_result_data.frequency_MHz + ",";
+               output_string += selected_AP_scan_result_data.getMac_address() + ",";
+               Queue<TimestampedRSS> all_rss_values = selected_AP_scan_result_data.getAllRSS();
+               String rss_string = "";
+               Iterator<TimestampedRSS> rss_iterator = all_rss_values.iterator();
+
+               while (rss_iterator.hasNext() == true)
+               {
+               	Log.d(getLocalClassName(), "Step 10A: RSS Strings Assembled");
+               	rss_string = rss_string + rss_iterator.next().rssTimestampPair() + ",";        	
+               }
+               output_string += rss_string + "\n";
                
-               Log.d(getLocalClassName(), "Step 10C: "+outputString);
-               file_writer.write(outputString.getBytes());
-               file_writer.flush();
-               file_writer.close();
+               Log.d(getLocalClassName(), "Step 10C: "+output_string);
+               output_file_writer.append(output_string);
+               output_file_writer.flush();
+               output_file_writer.close();
+               file_written_successfully = true;
             }
             else
             {
             	Log.d(getLocalClassName(), "Step 10C: No file write access permission");
             }
+            }
         }
             catch (IOException ioe) 
               {ioe.printStackTrace();}
-        }        
+        }    
+        
         else
         {
         	Log.d(getLocalClassName(), "Step 11B: mWriteToCSVFile set to false or media not mounted for write");
         }
-    }
+    	return file_written_successfully;
+    }//writeAPDataToCSVFile
     
 }

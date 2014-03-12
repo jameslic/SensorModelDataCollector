@@ -63,4 +63,9 @@ public class TimestampedRSS implements Comparable<Object>
 	{
 		return String.valueOf(mReceivedSignalStrength_dBm);
 	}	
+	
+	public String rssTimestampPair()
+	{
+		return String.valueOf(mReceivedSignalStrength_dBm)+"," + String.valueOf(mTimestamp);
+	}
 }
