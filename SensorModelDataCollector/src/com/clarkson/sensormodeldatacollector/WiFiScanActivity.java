@@ -1,9 +1,13 @@
 package com.clarkson.sensormodeldatacollector;    
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;    
@@ -35,6 +39,7 @@ import android.view.View;
 import android.view.View.OnClickListener;    
 import android.widget.AdapterView;    
 import android.widget.Button;    
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ListView;    
 import android.widget.SimpleAdapter;    
@@ -71,6 +76,7 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 	public int mNumberOfScansCounter = 0;    
 	AlertDialog.Builder mWriteToFileDialog;
 	AlertDialog.Builder mResetScanResultsDialog;
+	AlertDialog.Builder mServerConnectionDialog;
 
 	public int mCurrentlySelectedItemIndex = -1;
 	public String mCurrentlySelectedItemRSSString = "";
@@ -98,6 +104,28 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 	public long mMillisecondsSinceBoot = 0;
 
 	public boolean mWriteToCSVFile = false;
+	
+	CheckBox mConnectToServerCheckBox;
+	public boolean mConnectToServer;
+	public enum ServerStatus{
+		SENSOR_MODEL_SERVER_CONNECTED(4), SENSOR_MODEL_SERVER_DISCONNECTED(0);
+
+		 private ServerStatus(int connection_status){
+		    this.connection_status = connection_status;
+		  }
+
+		  private int connection_status;
+
+		  public int getStatus(){
+		    return this.connection_status;
+		  }
+
+		  public String toString(){
+		    return String.valueOf(this.connection_status);
+		  }
+		}
+	public ServerStatus mServerConnectionCode;
+	
 
 	/** 
 	 * Called when the activity is first created
@@ -115,8 +143,8 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 		mStartStopScanButton = (Button) findViewById(R.id.start_scan_button);
 		mStartStopScanButton.setOnClickListener(this);
 		mUserScanIntervalInput = (EditText)findViewById(R.id.timer_milliseconds);
-
-
+		mConnectToServerCheckBox = (CheckBox) findViewById(R.id.connectToServerCheckBox);
+		
 		mScanResultsListView = (ListView)findViewById(R.id.AP_list);
 
 
@@ -133,7 +161,8 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 		mScanResultsListView.setAdapter(mWifiScanResultAdapter);
 
 		buildAlertDialogs();
-		
+		//checkServerConnection(mConnectToServerCheckBox.isChecked());
+		checkServerConnection(true);
 		registerReceiver(mBroadcastReceiver = new BroadcastReceiver()
 		{
 			@Override
@@ -147,6 +176,18 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 		}, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));            
 	}
 
+	public void checkServerConnection(boolean checkServerConnection)
+	{
+		if(checkServerConnection == true)
+		{
+			mServerConnectionDialog.show();
+		}
+		else
+		{
+			
+		}
+	}
+	
 	/** 
 	 * Called when the WiFi scan activity exits back to the main menu
 	 */   
@@ -259,7 +300,102 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 			}//onClick
 		});//setNegativeButton
 		
+		//Set up our server connection dialog
+		mServerConnectionDialog = new AlertDialog.Builder(
+				WiFiScanActivity.this);
+
+		// Setting Dialog Title
+		mServerConnectionDialog.setTitle("Server Connection");
+
+		// Setting Dialog Message
+		mServerConnectionDialog.setMessage("Click OK to check server connection");
+
+		// Setting Icon to Dialog
+		mServerConnectionDialog.setIcon(R.drawable.ic_launcher);
+
+		// Setting Positive "Yes" button
+		mServerConnectionDialog.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int which) {
+				// Write your code here to execute after dialog
+
+				Toast.makeText(getApplicationContext(),
+						"Testing server connection...", Toast.LENGTH_SHORT)
+						.show();
+				if(testServerConnection() == true)
+				{
+					//Let user know file written successfully
+					Toast.makeText(getApplicationContext(),
+							"Server connected successfully", Toast.LENGTH_SHORT)
+							.show();
+				}//if
+				else
+				{
+					Toast.makeText(getApplicationContext(),
+							"Problem connecting to server, please check your settings!", Toast.LENGTH_SHORT)
+							.show();
+				}//else
+			}//onClick
+		});//setPositiveButton
+		// Setting Negative "Cancel" Button
+		mServerConnectionDialog.setNegativeButton("Cancel",
+				new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int which) {
+				// Write your code here to execute after dialog
+
+				/*Toast.makeText(getApplicationContext(),
+                                "You clicked on NO", Toast.LENGTH_SHORT)
+                                .show();*/
+				dialog.cancel();
+			}//onClick
+		});//setNegativeButton
+		
 	}//buildAlertDialogs
+	
+	boolean testServerConnection()
+	{
+		boolean server_status = false;
+		try{
+        	//108.26.49.81
+            URL url = new URL("http://192.168.1.6:9999/SensorModelServletProject/SensorModelServlet");
+            //URL url = new URL("http://108.26.49.81:9999/SensorModelServletProject/SensorModelServlet");
+            URLConnection connection = url.openConnection();
+            //connection.ge
+            
+            String inputString = "2";
+            //inputString = URLEncoder.encode(inputString, "UTF-8");
+
+            Log.d("inputString", inputString);
+
+            connection.setDoOutput(true);
+            OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream());
+            out.write(inputString);
+            out.close();
+
+            BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+
+            String returnString="";
+            
+            mServerConnectionCode = ServerStatus.SENSOR_MODEL_SERVER_DISCONNECTED;
+            while ((returnString = in.readLine()) != null) 
+            {
+            	Log.d("returnString", returnString);
+            	Log.d("enum value connected: ", ServerStatus.SENSOR_MODEL_SERVER_CONNECTED.toString());
+            	mServerConnectionCode.connection_status = Integer.valueOf(returnString);
+            }
+            in.close();
+
+            }catch(Exception e)
+            {
+                Log.d("Exception",e.toString());
+            }
+
+		if(4 == mServerConnectionCode.connection_status)
+        {
+        	server_status = true;  
+        	Log.d("connected successfully ", "YES");
+        }  
+		return server_status;
+	}
 	
 	/** 
 	 * Called when the activity is first created

@@ -12,5 +12,6 @@
     <string name="timer_milliseconds_value">100</string>
     <string name="alert_dialog_yes">Yes</string>
     <string name="alert_dialog_no">No</string>
+    <string name="checkbox_name">Connect To Server</string>
 
 </resources>

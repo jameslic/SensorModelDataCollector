@@ -59,4 +59,13 @@
         android:text="@string/timer_label"
         android:textAppearance="?android:attr/textAppearanceLarge" />
 
+    <CheckBox
+        android:id="@+id/connectToServerCheckBox"
+        android:layout_width="183dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_marginBottom="100dp"
+        android:layout_marginLeft="80dp"
+        android:text="@string/checkbox_name" />
+
 </FrameLayout>

@@ -6,6 +6,8 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 //import android.widget.Button;
+import android.widget.Button;
+import android.widget.CheckBox;
 
 /**
  * An example full-screen activity 
@@ -28,13 +30,14 @@ public class MainMenu extends Activity {
      * The instance of the {@link SystemUiHider} for this activity.
      */
     //private SystemUiHider mSystemUiHider;
-
+	
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_main_menu);
 
+        
 Log.d(getLocalClassName(), "Step 1");
         
         
