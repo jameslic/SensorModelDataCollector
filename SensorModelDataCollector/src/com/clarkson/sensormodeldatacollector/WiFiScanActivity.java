@@ -15,6 +15,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;    
 import java.util.Queue;
+import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -60,6 +61,7 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 {      
 	//The wifi manager provides the system level API calls to the wifi hardware
 	WifiManager mWifiManager;
+	Bundle mMainMenuExtras;
 	//Member variable to hold the AP count for a given scan
 	int mWifiManagerScanResultsCount = 0;
 	//List member variable to store wifi scan results
@@ -82,6 +84,7 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 	public String mCurrentlySelectedItemRSSString = "";
 
 	final int NUMBER_DEFAULT_SCAN_ITEMS = 2;
+	private final String mDefaultServerURL = "http://192.168.1.6:9999/SensorModelServletProject/SensorModelServlet";
 	//Historical hashmap to continue to collect RSS values for APs we encounter in multiple scans
 	WiFiScanResultHashMap mScanResultsHashMap = new WiFiScanResultHashMap();
 	//Indicator for weather scan is running or not
@@ -91,8 +94,6 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 	ListView mScanResultsListView;
 	//The button object provides a handle to the Start/Stop scan button that appears to the user on the Wi-Fi activity page
 	Button mStartStopScanButton;
-	//The Edit Text object provides a handle to the value entered by the user for the scan interval on the configuration/main activity page
-	EditText mUserScanIntervalInput;
 	//Wifi Scan Timer Task Members
 	//Wifi scheduled timer task
 	TimerTask mTimerTask;
@@ -102,11 +103,11 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 	private Handler mScanTimerHandler = new Handler();
 	BroadcastReceiver mBroadcastReceiver;
 	public long mMillisecondsSinceBoot = 0;
+	public long mWifiScanIntervalMilliseconds = 5000; //Default 5 seconds
 
 	public boolean mWriteToCSVFile = false;
 	
-	CheckBox mConnectToServerCheckBox;
-	public boolean mConnectToServer;
+	public boolean mConnectToServer = false; //Default to not connecting to server
 	public enum ServerStatus{
 		SENSOR_MODEL_SERVER_CONNECTED(4), SENSOR_MODEL_SERVER_DISCONNECTED(0);
 
@@ -141,12 +142,16 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 		setContentView(R.layout.wifi_scan_layout);
 		Log.d(getLocalClassName(), "Step 3");
 		mStartStopScanButton = (Button) findViewById(R.id.start_scan_button);
-		mStartStopScanButton.setOnClickListener(this);
-		mUserScanIntervalInput = (EditText)findViewById(R.id.timer_milliseconds);
-		mConnectToServerCheckBox = (CheckBox) findViewById(R.id.connectToServerCheckBox);
+		mStartStopScanButton.setOnClickListener(this);		
 		
 		mScanResultsListView = (ListView)findViewById(R.id.AP_list);
 
+		mMainMenuExtras = getIntent().getExtras();
+		if(mMainMenuExtras != null)
+		{
+			mConnectToServer = mMainMenuExtras.getBoolean("mConnectToServer");
+			mWifiScanIntervalMilliseconds = mMainMenuExtras.getLong("mWifiScanIntervalMilliseconds");
+		}//if
 
 		Resources application_resources =getResources();
 		mWifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
@@ -161,8 +166,8 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 		mScanResultsListView.setAdapter(mWifiScanResultAdapter);
 
 		buildAlertDialogs();
-		//checkServerConnection(mConnectToServerCheckBox.isChecked());
-		checkServerConnection(true);
+		
+		checkServerConnection();
 		registerReceiver(mBroadcastReceiver = new BroadcastReceiver()
 		{
 			@Override
@@ -174,19 +179,19 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 				handleScanResults();
 			}
 		}, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));            
-	}
+	}//onCreate
 
-	public void checkServerConnection(boolean checkServerConnection)
+	public void checkServerConnection()
 	{
-		if(checkServerConnection == true)
+		if(mConnectToServer == true)
 		{
 			mServerConnectionDialog.show();
-		}
+		}//if
 		else
 		{
-			
-		}
-	}
+			//Do nothing
+		}//else
+	}//checkServerConnection
 	
 	/** 
 	 * Called when the WiFi scan activity exits back to the main menu
@@ -199,6 +204,9 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 		super.onStop();
 	}//onStop
 
+	/** 
+	 * Creates all Dialogs that appear during user interaction with Wifi Scan Activity
+	 */   
 	private void buildAlertDialogs()
 	{
 		//Set up our write to file dialog
@@ -351,27 +359,33 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 		
 	}//buildAlertDialogs
 	
+	/** 
+	 * Tests the apps ability to connect to the Servlet
+	 */   
 	boolean testServerConnection()
 	{
 		boolean server_status = false;
+		Random test_code_generator = new Random();
+		int test_code_number = test_code_generator.nextInt(10); //Generate random number between 0 and 10
+        int test_code_response = 0;
 		try{
         	//108.26.49.81
-            URL url = new URL("http://192.168.1.6:9999/SensorModelServletProject/SensorModelServlet");
+            URL url = new URL(mDefaultServerURL);
             //URL url = new URL("http://108.26.49.81:9999/SensorModelServletProject/SensorModelServlet");
-            URLConnection connection = url.openConnection();
-            //connection.ge
+            URLConnection sensor_model_servlet = url.openConnection();
             
-            String inputString = "2";
+            
             //inputString = URLEncoder.encode(inputString, "UTF-8");
+            
+            String test_code_input_string = String.valueOf(test_code_number);
+            Log.d(getLocalClassName(), "Test code input: " + test_code_input_string);
 
-            Log.d("inputString", inputString);
-
-            connection.setDoOutput(true);
-            OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream());
-            out.write(inputString);
+            sensor_model_servlet.setDoOutput(true);
+            OutputStreamWriter out = new OutputStreamWriter(sensor_model_servlet.getOutputStream());
+            out.write(test_code_input_string);
             out.close();
 
-            BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+            BufferedReader in = new BufferedReader(new InputStreamReader(sensor_model_servlet.getInputStream()));
 
             String returnString="";
             
@@ -380,19 +394,20 @@ public class WiFiScanActivity extends Activity implements OnClickListener
             {
             	Log.d("returnString", returnString);
             	Log.d("enum value connected: ", ServerStatus.SENSOR_MODEL_SERVER_CONNECTED.toString());
-            	mServerConnectionCode.connection_status = Integer.valueOf(returnString);
+            	test_code_response = Integer.valueOf(returnString);
             }
             in.close();
 
-            }catch(Exception e)
+            }
+			catch(Exception e)
             {
                 Log.d("Exception",e.toString());
             }
 
-		if(4 == mServerConnectionCode.connection_status)
+		if(test_code_response == test_code_number*2 && test_code_response <= 20)
         {
         	server_status = true;  
-        	Log.d("connected successfully ", "YES");
+        	Log.d(getLocalClassName(), "Test code response: " + String.valueOf(test_code_response));
         }  
 		return server_status;
 	}

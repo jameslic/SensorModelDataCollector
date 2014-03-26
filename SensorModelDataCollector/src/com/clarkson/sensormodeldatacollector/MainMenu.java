@@ -8,6 +8,7 @@ import android.view.View;
 //import android.widget.Button;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.EditText;
 
 /**
  * An example full-screen activity 
@@ -30,13 +31,15 @@ public class MainMenu extends Activity {
      * The instance of the {@link SystemUiHider} for this activity.
      */
     //private SystemUiHider mSystemUiHider;
-	
+	private CheckBox mConnectToServerCheckBox;
+	private EditText mWifiScanIntervalTextField;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_main_menu);
-
+        mConnectToServerCheckBox = (CheckBox) findViewById(R.id.connectToServerCheckBox);
+        mWifiScanIntervalTextField = (EditText)findViewById(R.id.timer_milliseconds);
         
 Log.d(getLocalClassName(), "Step 1");
         
@@ -48,7 +51,9 @@ Log.d(getLocalClassName(), "Step 1");
     {
     	Log.d(getLocalClassName(), "Step 2");
     	//Intent intent = new Intent(getApplicationContext(), apc.examples.AboutActivity.class); 
-    	Intent intent = new Intent(getApplicationContext(), com.clarkson.sensormodeldatacollector.WiFiScanActivity.class); 
+    	Intent intent = new Intent(getApplicationContext(), com.clarkson.sensormodeldatacollector.WiFiScanActivity.class);
+    	intent.putExtra("mConnectToServer", mConnectToServerCheckBox.isChecked());
+    	intent.putExtra("mWifiScanIntervalMilliseconds", Long.getLong(mWifiScanIntervalTextField.getText().toString()));
     	startActivity(intent);
     }
 }
