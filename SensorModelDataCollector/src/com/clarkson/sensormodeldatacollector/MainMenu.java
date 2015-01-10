@@ -6,7 +6,6 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 //import android.widget.Button;
-import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 
@@ -28,18 +27,22 @@ public class MainMenu extends Activity {
     //private static final int HIDER_FLAGS = SystemUiHider.FLAG_HIDE_NAVIGATION;
 
     /**
-     * The instance of the {@link SystemUiHider} for this activity.
+     * The instance of the {@link com.clarkson.sensormodeldatacollector.util.SystemUiHider} for this activity.
      */
     //private SystemUiHider mSystemUiHider;
 	private CheckBox mConnectToServerCheckBox;
 	private EditText mWifiScanIntervalTextField;
+    private CheckBox mSSIDFilterEnableCheckbox;
+    private EditText mSSIDFilterTextField;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_main_menu);
         mConnectToServerCheckBox = (CheckBox) findViewById(R.id.connectToServerCheckBox);
-        mWifiScanIntervalTextField = (EditText)findViewById(R.id.timer_milliseconds);
+        mWifiScanIntervalTextField = (EditText)findViewById(R.id.timer_seconds);
+        mSSIDFilterEnableCheckbox = (CheckBox)findViewById(R.id.ssidFilterEnabled);
+        mSSIDFilterTextField = (EditText)findViewById(R.id.ssidFilter);
         
 Log.d(getLocalClassName(), "Step 1");
         
@@ -53,7 +56,9 @@ Log.d(getLocalClassName(), "Step 1");
     	//Intent intent = new Intent(getApplicationContext(), apc.examples.AboutActivity.class); 
     	Intent intent = new Intent(getApplicationContext(), com.clarkson.sensormodeldatacollector.WiFiScanActivity.class);
     	intent.putExtra("mConnectToServer", mConnectToServerCheckBox.isChecked());
-    	intent.putExtra("mWifiScanIntervalMilliseconds", Long.getLong(mWifiScanIntervalTextField.getText().toString()));
+    	intent.putExtra("mWifiScanIntervalMilliseconds", 1000*Long.getLong(mWifiScanIntervalTextField.getText().toString()));
+        intent.putExtra("mSSIDFilterEnabled", mSSIDFilterEnableCheckbox.isChecked());
+        intent.putExtra("mSSIDFilter", mSSIDFilterTextField.getText().toString());
     	startActivity(intent);
     }
 }

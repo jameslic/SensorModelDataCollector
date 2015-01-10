@@ -104,6 +104,8 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 	BroadcastReceiver mBroadcastReceiver;
 	public long mMillisecondsSinceBoot = 0;
 	public long mWifiScanIntervalMilliseconds = 5000; //Default 5 seconds
+    public boolean mSSIDFilterEnabled = false;
+    public String mSSIDFilter = "CiscoLinksys";
 
 	public boolean mWriteToCSVFile = false;
 	
@@ -572,8 +574,16 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 				scan_result_item.setFrequency(mWifiManagerScanResults.get(mWifiManagerScanResultsCount).frequency);                
 				//Log the scan result fields
 				Log.d(getLocalClassName(), "STEP 5B: " + scan_result_item.printMe());
-				//Add the scan result item to the results Array List
-				mScanResultsHashMap.addItem(scan_result_item);
+				//Add the scan result item to the results Array List only if matches SSID filter
+                if(this.mSSIDFilterEnabled == true) {
+                    if (scan_result_item.getSSID().matches(this.mSSIDFilter + "*")) {
+                        mScanResultsHashMap.addItem(scan_result_item);
+                    }//if
+                }//if
+                else
+                {
+                    mScanResultsHashMap.addItem(scan_result_item);
+                }//else
 				//mScanResultsArrayList.add(scan_result_item);
 				//Use a hash set to remove duplicates
 				//HashSet<WiFiScanResult> duplicate_filter = new HashSet<WiFiScanResult>();

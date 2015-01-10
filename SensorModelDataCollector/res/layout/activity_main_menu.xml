@@ -40,32 +40,72 @@
 
     </LinearLayout>
 
-    <EditText
-        android:id="@+id/timer_milliseconds"
-        android:layout_width="137dp"
-        android:layout_height="wrap_content"
-        android:layout_gravity="right"
-        android:ems="10"
-        android:gravity="fill_horizontal"
-        android:inputType="number"
-        android:text="@string/timer_milliseconds_value" />
-
-    <TextView
-        android:id="@+id/timer_milliseconds_label"
-        android:layout_width="wrap_content"
-        android:layout_height="40dp"
-        android:layout_gravity="left"
-        android:layout_marginTop="3dp"
-        android:text="@string/timer_label"
-        android:textAppearance="?android:attr/textAppearanceLarge" />
-
     <CheckBox
         android:id="@+id/connectToServerCheckBox"
         android:layout_width="183dp"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom"
+        android:layout_gravity="center_horizontal|bottom"
         android:layout_marginBottom="100dp"
-        android:layout_marginLeft="80dp"
         android:text="@string/checkbox_name" />
+
+    <TextView
+        android:layout_width="257dp"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:text="SSID Filter"
+        android:id="@+id/textView"
+        android:layout_gravity="center"
+        android:textSize="@android:dimen/app_icon_size" />
+
+    <EditText
+        android:layout_width="469dp"
+        android:layout_height="48dp"
+        android:id="@+id/ssidFilter"
+        android:layout_gravity="center"
+        android:inputType="text"
+        android:background="#bbfdffa6"
+        android:autoText="false"
+        android:textColor="#FF000000"
+        android:gravity="bottom|right"
+        android:layout_marginTop="75dp"
+        android:textAlignment="gravity"
+        android:textSize="@android:dimen/app_icon_size"
+        android:text="CiscoLinksys"
+        android:textStyle="italic"
+        android:typeface="normal" />
+
+    <EditText
+        android:id="@+id/timer_seconds"
+        android:layout_width="102dp"
+        android:layout_height="49dp"
+        android:layout_gravity="center_horizontal"
+        android:ems="10"
+        android:gravity="fill_horizontal"
+        android:inputType="number"
+        android:text="@string/timer_seconds_value"
+        android:background="#bbfdffa6"
+        android:textColor="#ff000000"
+        android:layout_marginTop="125dp"
+        android:textAlignment="center"
+        android:textSize="@android:dimen/app_icon_size" />
+
+    <TextView
+        android:id="@+id/timer_seconds_label"
+        android:layout_width="359dp"
+        android:layout_height="74dp"
+        android:layout_gravity="center_horizontal|top"
+        android:layout_marginTop="50dp"
+        android:text="@string/timer_label"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:textSize="@android:dimen/app_icon_size" />
+
+    <CheckBox
+        android:layout_width="240dp"
+        android:layout_height="wrap_content"
+        android:text="Enable"
+        android:id="@+id/ssidFilterEnabled"
+        android:layout_gravity="center"
+        android:textSize="@android:dimen/app_icon_size"
+        android:layout_marginTop="150dp" />
 
 </FrameLayout>

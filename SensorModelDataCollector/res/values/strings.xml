@@ -8,8 +8,8 @@
     <string name="scan_text">Scanning....</string>
     <string name="perform_scan">Start Scan</string>
     <string name="stop_scan">Stop Scan</string>
-    <string name="timer_label">Timer Period (ms)</string>
-    <string name="timer_milliseconds_value">100</string>
+    <string name="timer_label">Timer Period (s)</string>
+    <string name="timer_seconds_value">1</string>
     <string name="alert_dialog_yes">Yes</string>
     <string name="alert_dialog_no">No</string>
     <string name="checkbox_name">Connect To Server</string>
