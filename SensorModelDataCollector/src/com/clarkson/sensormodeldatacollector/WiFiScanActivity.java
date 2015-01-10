@@ -152,7 +152,9 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 		if(mMainMenuExtras != null)
 		{
 			mConnectToServer = mMainMenuExtras.getBoolean("mConnectToServer");
-			mWifiScanIntervalMilliseconds = mMainMenuExtras.getLong("mWifiScanIntervalMilliseconds");
+			mWifiScanIntervalMilliseconds = 1000*mMainMenuExtras.getLong("mWifiScanIntervalSeconds");
+            this.mSSIDFilter = mMainMenuExtras.getString("mSSIDFilter");
+            this.mSSIDFilterEnabled = mMainMenuExtras.getBoolean("mSSIDFilterEnabled");
 		}//if
 
 		Resources application_resources =getResources();
@@ -576,7 +578,9 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 				Log.d(getLocalClassName(), "STEP 5B: " + scan_result_item.printMe());
 				//Add the scan result item to the results Array List only if matches SSID filter
                 if(this.mSSIDFilterEnabled == true) {
-                    if (scan_result_item.getSSID().matches(this.mSSIDFilter + "*")) {
+                    Log.d(getLocalClassName(), "SSID: " + scan_result_item.getSSID());
+                    Log.d(getLocalClassName(), "SSID Filter: " + this.mSSIDFilter + "*");
+                    if (scan_result_item.getSSID().matches(this.mSSIDFilter + "(.*)")) {
                         mScanResultsHashMap.addItem(scan_result_item);
                     }//if
                 }//if

@@ -45,8 +45,8 @@
         android:layout_width="183dp"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal|bottom"
-        android:layout_marginBottom="100dp"
-        android:text="@string/checkbox_name" />
+        android:text="@string/checkbox_name"
+        android:layout_marginBottom="50dp" />
 
     <TextView
         android:layout_width="257dp"
@@ -58,7 +58,7 @@
         android:textSize="@android:dimen/app_icon_size" />
 
     <EditText
-        android:layout_width="469dp"
+        android:layout_width="316dp"
         android:layout_height="48dp"
         android:id="@+id/ssidFilter"
         android:layout_gravity="center"
@@ -86,8 +86,8 @@
         android:background="#bbfdffa6"
         android:textColor="#ff000000"
         android:layout_marginTop="125dp"
-        android:textAlignment="center"
-        android:textSize="@android:dimen/app_icon_size" />
+        android:textSize="@android:dimen/app_icon_size"
+        android:textAlignment="center" />
 
     <TextView
         android:id="@+id/timer_seconds_label"
@@ -106,6 +106,6 @@
         android:id="@+id/ssidFilterEnabled"
         android:layout_gravity="center"
         android:textSize="@android:dimen/app_icon_size"
-        android:layout_marginTop="150dp" />
+        android:layout_marginTop="125dp" />
 
 </FrameLayout>
