@@ -6,7 +6,7 @@
     <string name="wifi_scan_text">Start WiFi Scan</string>
     <string name="myTextView">Hello World</string>
     <string name="scan_text">Scanning....</string>
-    <string name="perform_scan">Start Scan</string>
+    <string name="perform_scan">Start Scanning</string>
     <string name="stop_scan">Stop Scan</string>
     <string name="timer_label">Timer Period (s)</string>
     <string name="timer_seconds_value">1</string>

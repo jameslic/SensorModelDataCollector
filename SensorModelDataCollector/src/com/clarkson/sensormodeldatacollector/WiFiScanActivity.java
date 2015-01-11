@@ -90,10 +90,13 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 	//Indicator for weather scan is running or not
 	public boolean mScanRunning = false;
 	public boolean mResetScanResults = false;
+    public boolean mReceiverRegistered = false;
 	//The list view object gives a handle to the list that appears to the user on the Wi-Fi activity page
 	ListView mScanResultsListView;
 	//The button object provides a handle to the Start/Stop scan button that appears to the user on the Wi-Fi activity page
 	Button mStartStopScanButton;
+    //The button object provides a handle to the one shot scan button that appears to the user on the Wi-Fi activity page
+    Button mOneShotScanButton;
 	//Wifi Scan Timer Task Members
 	//Wifi scheduled timer task
 	TimerTask mTimerTask;
@@ -144,7 +147,9 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 		setContentView(R.layout.wifi_scan_layout);
 		Log.d(getLocalClassName(), "Step 3");
 		mStartStopScanButton = (Button) findViewById(R.id.start_scan_button);
-		mStartStopScanButton.setOnClickListener(this);		
+		mStartStopScanButton.setOnClickListener(this);
+        mOneShotScanButton = (Button) findViewById(R.id.one_shot_scan_button);
+        mOneShotScanButton.setOnClickListener(this);
 		
 		mScanResultsListView = (ListView)findViewById(R.id.AP_list);
 
@@ -172,17 +177,6 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 		buildAlertDialogs();
 		
 		checkServerConnection();
-		registerReceiver(mBroadcastReceiver = new BroadcastReceiver()
-		{
-			@Override
-			public void onReceive(Context c, Intent intent) 
-			{
-				mWifiManagerScanResults = mWifiManager.getScanResults();
-				mWifiManagerScanResultsCount = mWifiManagerScanResults.size();
-				Log.d(getLocalClassName(), "Step 4: HandleScanResults");
-				handleScanResults();
-			}
-		}, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));            
 	}//onCreate
 
 	public void checkServerConnection()
@@ -443,44 +437,120 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 	}//setWiFiScanListData
 
 	/** 
-	 * Called when the Start/Stop scan button is pressed
-	 * 
-	 * This method clears out any previous scan results and schedules a new wifi scan timer task
-	 * If the scan is already running, then this method halts the timer task and resets the scan counter
+	 * Called when a button on the WiFiScanActivity view is pressed
+	 *
+     * Decides which method to call based on the buton type pressed
 	 * @param view - the view shed for the current activity
 	 */  
 	public void onClick(View view) 
 	{
 		Log.d(getLocalClassName(), "Step 5");
-
-
-		if(mStartStopScanButton.getText().toString().equals(getResources().getString(R.string.perform_scan)))
-		{
-			if(mNumberOfScansCounter == 0)
-			{
-				//Set time to normalize scan results to if this is the first scan
-				mMillisecondsSinceBoot = SystemClock.uptimeMillis();
-			}//if
-			mScanResultsArrayList.clear();
-			mWifiScanResultAdapter.disableItemsSelection();
-			Log.d(getLocalClassName(), "Step 5.1");
-			//startTime = SystemClock.uptimeMillis();
-			mStartStopScanButton.setText(R.string.stop_scan);
-			mScanRunning = true;
-			scheduleWifiScanTimerTask();  	   
-		}//if
-		else
-		{
-			mWifiScanResultAdapter.enableItemsSelection();
-			Log.d(getLocalClassName(), "Step 5.2");
-			//Halt the wifi scan timer task
-			mTimerTask.cancel();
-			mScanRunning = false;
-			//Set the Scan button text back to performing the scan
-			mStartStopScanButton.setText(R.string.perform_scan);			
-			mResetScanResultsDialog.show();
-		}//else
+        switch (view.getId())
+        {
+            case R.id.one_shot_scan_button:
+                onOneShotScanClick();
+                break;
+            case R.id.start_scan_button:
+                onStartScanningClick();
+                break;
+            default:
+                onStartScanningClick();
+                break;
+        }//switch
 	}//onClick
+
+    public void registerWifiScanReceiver()
+    {
+        registerReceiver(mBroadcastReceiver = new BroadcastReceiver()
+        {
+            @Override
+            public void onReceive(Context c, Intent intent)
+            {
+                mWifiManagerScanResults = mWifiManager.getScanResults();
+                mWifiManagerScanResultsCount = mWifiManagerScanResults.size();
+                Log.d(getLocalClassName(), "Step 4: HandleScanResults");
+                handleScanResults();
+            }
+        }, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
+        mReceiverRegistered = true;
+    }
+
+    public void unregisterWifiScanReceiver()
+    {
+        unregisterReceiver(mBroadcastReceiver);
+        mReceiverRegistered = false;
+    }//unregisterWifiScanReceiver
+
+    /**
+     * Called when the Start/Stop scan button is pressed
+     *
+     * This method clears out any previous scan results and schedules a new wifi scan timer task
+     * If the scan is already running, then this method halts the timer task and resets the scan counter
+     * If the one shot scan button is clicked, scan results are cleared out and a single scan is performed
+     */
+    public void onStartScanningClick()
+    {
+        if(mStartStopScanButton.getText().toString().equals(getResources().getString(R.string.perform_scan)))
+        {
+            if(mNumberOfScansCounter == 0)
+            {
+                //Set time to normalize scan results to if this is the first scan
+                mMillisecondsSinceBoot = SystemClock.uptimeMillis();
+            }//if
+            mScanResultsArrayList.clear();
+            mWifiScanResultAdapter.disableItemsSelection();
+            Log.d(getLocalClassName(), "Step 5.1");
+            //startTime = SystemClock.uptimeMillis();
+            mStartStopScanButton.setText(R.string.stop_scan);
+            mScanRunning = true;
+            if(mReceiverRegistered == false) {
+                registerWifiScanReceiver();
+            }//if
+            scheduleWifiScanTimerTask(false);
+        }//if
+        else
+        {
+            mWifiScanResultAdapter.enableItemsSelection();
+            Log.d(getLocalClassName(), "Step 5.2");
+            //Halt the wifi scan timer task
+            mTimerTask.cancel();
+            mScanRunning = false;
+            //Set the Scan button text back to performing the scan
+            mStartStopScanButton.setText(R.string.perform_scan);
+            mResetScanResultsDialog.show();
+            if(mReceiverRegistered) {
+                unregisterWifiScanReceiver();
+            }//if
+        }//else
+    }//onStartScanningClick
+
+    public void onOneShotScanClick()
+    {
+        Log.d(getLocalClassName(), "Step 5(one shot)");
+
+        if(mScanRunning == true)
+        {
+            mWifiScanResultAdapter.enableItemsSelection();
+            Log.d(getLocalClassName(), "Step 5.2");
+            //Halt the wifi scan timer task
+            mTimerTask.cancel();
+            mScanRunning = false;
+            //Set the Scan button text back to performing the scan
+            mStartStopScanButton.setText(R.string.perform_scan);
+            mResetScanResultsDialog.show();
+        }//if
+        mMillisecondsSinceBoot = SystemClock.uptimeMillis();
+        mWifiScanResultAdapter.disableItemsSelection();
+        Log.d(getLocalClassName(), "Step 5.1");
+        mScanRunning = true;
+        if(mReceiverRegistered == false)
+        {
+            registerWifiScanReceiver();
+        }//if
+        scheduleWifiScanTimerTask(true);
+        unregisterWifiScanReceiver();
+        mScanRunning = false;
+    }//onClick
 
 	/** 
 	 * Called when user requests after a stop scan
@@ -506,7 +576,7 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 	 * 
 	 * This method initializes the wifi scan timer task and calls the performScan method.
 	 */  
-	public void scheduleWifiScanTimerTask()
+	public void scheduleWifiScanTimerTask(boolean oneShot)
 	{    	 
 		mTimerTask = new TimerTask() 
 		{
@@ -524,7 +594,22 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 
 			// public void schedule (TimerTask task, long delay, long period) 
 			//mScanTimer.schedule(mTimerTask, 500, Integer.parseInt(scanText.getText().toString()));
-			mScanTimer.schedule(mTimerTask, 500, 5000);
+        if(oneShot == true)
+        {
+            mScanTimer.schedule(mTimerTask, 500);
+            try {
+                synchronized (this) {
+                    wait(1002);
+                }
+            } catch (InterruptedException e) {
+                Log.d(getLocalClassName(), "Waiting didnt work!!");
+                e.printStackTrace();
+            }
+        }//if
+        else
+        {
+            mScanTimer.schedule(mTimerTask, 500, 5000);
+        }//else
 
 	}//scheduleWifiScanTimerTask
 
@@ -604,7 +689,8 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 		catch (Exception e)
 		{ 
 			Log.d(getLocalClassName(), "Step 6.2A: Errors");
-		}//catch           
+		}//catch
+
 	}//handleScanResults
 
 	/*****************  This function used by WiFiScanResultAdapter ****************/
@@ -657,20 +743,24 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 				String output_string="SSID,Channel,Frequency,MAC,RSS,Timestamp,(1:N)\n";
 				Log.d(getLocalClassName(), "Step 11A: Logging to CSV file");
 
-				File output_folder = new File(Environment.getExternalStorageDirectory() + File.separator + "SensorModelDataCollector");
-				boolean folder_success = true;
-				if (!output_folder.exists()) {
-					folder_success = output_folder.mkdir();
+				//File output_folder = new File(Environment.getExternalStorageDirectory() + File.separator + "SensorModelDataCollector");
+                File new_file = getFilesDir();
+                boolean folder_success = true;
+				if (!new_file.exists()) {
+					//folder_success = output_folder.mkdir();
+                    folder_success |= new_file.mkdir();
 				}
 
 				if(folder_success == true)
 				{
 					String output_filename = selected_AP_scan_result_data.mSSID+"_"+selected_AP_scan_result_data.getLatestTimestampedRSS().mTimestamp+".csv";
 
-					File output_file = new File(output_folder, output_filename);
+					//File output_file = new File(output_folder, output_filename);
+                    File output_file = new File(new_file, output_filename);
 					if (output_file.exists() == false)
 					{
 						output_file.createNewFile();
+                        //output_file2.createNewFile();
 					}//if - file doesn't exist, create it
 
 
