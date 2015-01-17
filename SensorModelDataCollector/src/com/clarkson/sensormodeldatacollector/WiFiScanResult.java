@@ -63,6 +63,27 @@ public class WiFiScanResult implements Comparable<Object>{
 	    {
 	    	return mTimestampedRSSValues.element();
 	    }
+
+        public int getLatestRSS()
+        {
+            int returned_RSS = 0;
+            long latest_timestamp = 0;
+            if(mTimestampedRSSValues.size() > 0)
+            {
+                returned_RSS = mTimestampedRSSValues.element().getReceivedSignalStrength();
+                latest_timestamp = mTimestampedRSSValues.element().getTimestamp();
+                for( TimestampedRSS timestampedRSS : mTimestampedRSSValues)
+                {
+                    if(latest_timestamp < timestampedRSS.getTimestamp())
+                    {
+                        returned_RSS = timestampedRSS.getReceivedSignalStrength();
+                        latest_timestamp = timestampedRSS.getTimestamp();
+                    }//if
+                }//for
+            }//if
+
+            return returned_RSS;
+        }//getLatestRSS
 	    
 	    public Queue<TimestampedRSS> getAllRSS()
 	    {

@@ -26,12 +26,4 @@
         android:layout_gravity="center_horizontal"
         android:nestedScrollingEnabled="true" />
 
-    <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="One Shot Scan"
-        android:id="@+id/one_shot_scan_button"
-        android:layout_gravity="center_horizontal"
-        android:onClick="onOneShotScanClick" />
-
 </LinearLayout>

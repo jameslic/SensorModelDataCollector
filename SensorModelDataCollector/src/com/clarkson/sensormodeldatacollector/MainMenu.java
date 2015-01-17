@@ -56,7 +56,7 @@ Log.d(getLocalClassName(), "Step 1");
     	//Intent intent = new Intent(getApplicationContext(), apc.examples.AboutActivity.class); 
     	Intent intent = new Intent(getApplicationContext(), com.clarkson.sensormodeldatacollector.WiFiScanActivity.class);
     	intent.putExtra("mConnectToServer", mConnectToServerCheckBox.isChecked());
-    	intent.putExtra("mWifiScanIntervalSeconds", Long.getLong(mWifiScanIntervalTextField.getText().toString()));
+    	intent.putExtra("mWifiScanIntervalSeconds", mWifiScanIntervalTextField.getText().toString());
         intent.putExtra("mSSIDFilterEnabled", mSSIDFilterEnableCheckbox.isChecked());
         intent.putExtra("mSSIDFilter", mSSIDFilterTextField.getText().toString());
     	startActivity(intent);

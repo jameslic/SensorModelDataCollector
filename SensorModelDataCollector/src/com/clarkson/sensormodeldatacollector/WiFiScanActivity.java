@@ -95,8 +95,6 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 	ListView mScanResultsListView;
 	//The button object provides a handle to the Start/Stop scan button that appears to the user on the Wi-Fi activity page
 	Button mStartStopScanButton;
-    //The button object provides a handle to the one shot scan button that appears to the user on the Wi-Fi activity page
-    Button mOneShotScanButton;
 	//Wifi Scan Timer Task Members
 	//Wifi scheduled timer task
 	TimerTask mTimerTask;
@@ -148,8 +146,6 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 		Log.d(getLocalClassName(), "Step 3");
 		mStartStopScanButton = (Button) findViewById(R.id.start_scan_button);
 		mStartStopScanButton.setOnClickListener(this);
-        mOneShotScanButton = (Button) findViewById(R.id.one_shot_scan_button);
-        mOneShotScanButton.setOnClickListener(this);
 		
 		mScanResultsListView = (ListView)findViewById(R.id.AP_list);
 
@@ -157,7 +153,8 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 		if(mMainMenuExtras != null)
 		{
 			mConnectToServer = mMainMenuExtras.getBoolean("mConnectToServer");
-			mWifiScanIntervalMilliseconds = 1000*mMainMenuExtras.getLong("mWifiScanIntervalSeconds");
+            int wifi_scan_interval_seconds = Integer.parseInt(mMainMenuExtras.getString("mWifiScanIntervalSeconds"));
+			mWifiScanIntervalMilliseconds = 1000*wifi_scan_interval_seconds;
             this.mSSIDFilter = mMainMenuExtras.getString("mSSIDFilter");
             this.mSSIDFilterEnabled = mMainMenuExtras.getBoolean("mSSIDFilterEnabled");
 		}//if
@@ -197,8 +194,8 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 	@Override
 	protected void onStop()
 	{
-		Log.d(getLocalClassName(), "OnStop, unregistering receiver");
-		unregisterReceiver(mBroadcastReceiver);
+		Log.d(getLocalClassName(), "OnStop");
+		//unregisterReceiver(mBroadcastReceiver);
 		super.onStop();
 	}//onStop
 
@@ -447,9 +444,6 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 		Log.d(getLocalClassName(), "Step 5");
         switch (view.getId())
         {
-            case R.id.one_shot_scan_button:
-                onOneShotScanClick();
-                break;
             case R.id.start_scan_button:
                 onStartScanningClick();
                 break;
@@ -506,7 +500,7 @@ public class WiFiScanActivity extends Activity implements OnClickListener
             if(mReceiverRegistered == false) {
                 registerWifiScanReceiver();
             }//if
-            scheduleWifiScanTimerTask(false);
+            scheduleWifiScanTimerTask();
         }//if
         else
         {
@@ -523,34 +517,6 @@ public class WiFiScanActivity extends Activity implements OnClickListener
             }//if
         }//else
     }//onStartScanningClick
-
-    public void onOneShotScanClick()
-    {
-        Log.d(getLocalClassName(), "Step 5(one shot)");
-
-        if(mScanRunning == true)
-        {
-            mWifiScanResultAdapter.enableItemsSelection();
-            Log.d(getLocalClassName(), "Step 5.2");
-            //Halt the wifi scan timer task
-            mTimerTask.cancel();
-            mScanRunning = false;
-            //Set the Scan button text back to performing the scan
-            mStartStopScanButton.setText(R.string.perform_scan);
-            mResetScanResultsDialog.show();
-        }//if
-        mMillisecondsSinceBoot = SystemClock.uptimeMillis();
-        mWifiScanResultAdapter.disableItemsSelection();
-        Log.d(getLocalClassName(), "Step 5.1");
-        mScanRunning = true;
-        if(mReceiverRegistered == false)
-        {
-            registerWifiScanReceiver();
-        }//if
-        scheduleWifiScanTimerTask(true);
-        unregisterWifiScanReceiver();
-        mScanRunning = false;
-    }//onClick
 
 	/** 
 	 * Called when user requests after a stop scan
@@ -576,7 +542,7 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 	 * 
 	 * This method initializes the wifi scan timer task and calls the performScan method.
 	 */  
-	public void scheduleWifiScanTimerTask(boolean oneShot)
+	public void scheduleWifiScanTimerTask()
 	{    	 
 		mTimerTask = new TimerTask() 
 		{
@@ -591,9 +557,7 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 					}//run
 				});//Runnable
 			}};//TimerTask
-
-			// public void schedule (TimerTask task, long delay, long period) 
-			//mScanTimer.schedule(mTimerTask, 500, Integer.parseInt(scanText.getText().toString()));
+/*
         if(oneShot == true)
         {
             mScanTimer.schedule(mTimerTask, 500);
@@ -610,7 +574,8 @@ public class WiFiScanActivity extends Activity implements OnClickListener
         {
             mScanTimer.schedule(mTimerTask, 500, 5000);
         }//else
-
+*/
+        mScanTimer.schedule(mTimerTask, 500, mWifiScanIntervalMilliseconds);
 	}//scheduleWifiScanTimerTask
 
 	/** 

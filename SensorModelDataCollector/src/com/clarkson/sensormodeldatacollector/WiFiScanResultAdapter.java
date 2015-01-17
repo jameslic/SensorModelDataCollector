@@ -119,7 +119,7 @@ import android.widget.TextView;
 	                 /************  Set Model values in Holder elements ***********/
 	 
 	                  holder.text_ssid.setText( "SSID: " + tempValues.getSSID());
-	                  holder.text_rss.setText( "RSS: " +tempValues.getRSS() + " dBm" );
+	                  holder.text_rss.setText( "RSS: " +tempValues.getLatestRSS() + " dBm" );
 	                   
 	                  /******** Set Item Click Listener for LayoutInflater for each row *******/
 	 
