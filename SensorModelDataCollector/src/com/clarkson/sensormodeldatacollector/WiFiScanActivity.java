@@ -28,7 +28,11 @@ import android.content.DialogInterface;
 import android.content.Intent;     
 import android.content.IntentFilter;    
 import android.content.res.Resources;
-import android.net.wifi.ScanResult;    
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
+import android.net.wifi.ScanResult;
 import android.net.wifi.WifiConfiguration;   
 import android.net.wifi.WifiManager;    
 import android.os.Bundle;    
@@ -57,7 +61,7 @@ import android.widget.Toast;
  * @author James Licata
  * @version 1.0
  */
-public class WiFiScanActivity extends Activity implements OnClickListener
+public class WiFiScanActivity extends Activity implements OnClickListener, SensorEventListener
 {      
 	//The wifi manager provides the system level API calls to the wifi hardware
 	WifiManager mWifiManager;
@@ -79,6 +83,8 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 	AlertDialog.Builder mWriteToFileDialog;
 	AlertDialog.Builder mResetScanResultsDialog;
 	AlertDialog.Builder mServerConnectionDialog;
+    private final SensorManager mSensorManager;
+    private final Sensor mAccelerometer;
 
 	public int mCurrentlySelectedItemIndex = -1;
 	public String mCurrentlySelectedItemRSSString = "";
@@ -111,7 +117,47 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 	public boolean mWriteToCSVFile = false;
 	
 	public boolean mConnectToServer = false; //Default to not connecting to server
-	public enum ServerStatus{
+
+    public WiFiScanActivity()
+    {
+        mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
+        mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
+    }//WifiScanActivity
+
+    protected void onPause()
+    {
+        super.onPause();
+        mSensorManager.unregisterListener(this);
+    }//onPause
+
+    protected void onResume()
+    {
+        super.onResume();
+        //mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+        //Make sensor delay 1 second
+        int sensor_delay_microseconds = 1000 * 1000;
+        mSensorManager.registerListener(this, mAccelerometer, sensor_delay_microseconds);
+    }//onResume
+
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        if(event.sensor.getType() == Sensor.TYPE_LINEAR_ACCELERATION)
+        {
+            float x = event.values[0];
+            float y = event.values[1];
+            float z = event.values[2];
+
+            Log.d(getLocalClassName(), "Accelerometer readings: X: "+x+" Y: "+y+" Z: "+z);
+        }//if
+
+    }//onSensorChanged
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
+    }
+
+    public enum ServerStatus{
 		SENSOR_MODEL_SERVER_CONNECTED(4), SENSOR_MODEL_SERVER_DISCONNECTED(0);
 
 		 private ServerStatus(int connection_status){
@@ -557,24 +603,7 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 					}//run
 				});//Runnable
 			}};//TimerTask
-/*
-        if(oneShot == true)
-        {
-            mScanTimer.schedule(mTimerTask, 500);
-            try {
-                synchronized (this) {
-                    wait(1002);
-                }
-            } catch (InterruptedException e) {
-                Log.d(getLocalClassName(), "Waiting didnt work!!");
-                e.printStackTrace();
-            }
-        }//if
-        else
-        {
-            mScanTimer.schedule(mTimerTask, 500, 5000);
-        }//else
-*/
+
         mScanTimer.schedule(mTimerTask, 500, mWifiScanIntervalMilliseconds);
 	}//scheduleWifiScanTimerTask
 
@@ -709,7 +738,8 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 				Log.d(getLocalClassName(), "Step 11A: Logging to CSV file");
 
 				//File output_folder = new File(Environment.getExternalStorageDirectory() + File.separator + "SensorModelDataCollector");
-                File new_file = getFilesDir();
+                //File new_file = new File(getFilesDir() + File.separator + "SensorModelDataCollector");
+                File new_file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS) + File.separator + "SensorModelDataCollector");
                 boolean folder_success = true;
 				if (!new_file.exists()) {
 					//folder_success = output_folder.mkdir();
