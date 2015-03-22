@@ -61,11 +61,12 @@ import android.widget.Toast;
  * @author James Licata
  * @version 1.0
  */
-public class WiFiScanActivity extends Activity implements OnClickListener, SensorEventListener
+public class WiFiScanActivity extends Activity implements OnClickListener
 {      
 	//The wifi manager provides the system level API calls to the wifi hardware
 	WifiManager mWifiManager;
 	Bundle mMainMenuExtras;
+    AccelerometerReceiver myReceiver=null;
 	//Member variable to hold the AP count for a given scan
 	int mWifiManagerScanResultsCount = 0;
 	//List member variable to store wifi scan results
@@ -83,12 +84,12 @@ public class WiFiScanActivity extends Activity implements OnClickListener, Senso
 	AlertDialog.Builder mWriteToFileDialog;
 	AlertDialog.Builder mResetScanResultsDialog;
 	AlertDialog.Builder mServerConnectionDialog;
-    private final SensorManager mSensorManager;
-    private final Sensor mAccelerometer;
+
+    ArrayList<String> mAccelerometerReadings = new ArrayList<String>();
 
 	public int mCurrentlySelectedItemIndex = -1;
 	public String mCurrentlySelectedItemRSSString = "";
-
+    Intent mAccelerometerIntent;
 	final int NUMBER_DEFAULT_SCAN_ITEMS = 2;
 	private final String mDefaultServerURL = "http://192.168.1.6:9999/SensorModelServletProject/SensorModelServlet";
 	//Historical hashmap to continue to collect RSS values for APs we encounter in multiple scans
@@ -120,14 +121,14 @@ public class WiFiScanActivity extends Activity implements OnClickListener, Senso
 
     public WiFiScanActivity()
     {
-        mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
-        mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
     }//WifiScanActivity
 
     protected void onPause()
     {
         super.onPause();
-        mSensorManager.unregisterListener(this);
+        //mSensorManager.unregisterListener(this);
+        stopService(mAccelerometerIntent);
+        if (myReceiver != null)unregisterReceiver(myReceiver);
     }//onPause
 
     protected void onResume()
@@ -135,27 +136,15 @@ public class WiFiScanActivity extends Activity implements OnClickListener, Senso
         super.onResume();
         //mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
         //Make sensor delay 1 second
-        int sensor_delay_microseconds = 1000 * 1000;
-        mSensorManager.registerListener(this, mAccelerometer, sensor_delay_microseconds);
+        //int sensor_delay_microseconds = 1000 * 1000;
+        //mSensorManager.registerListener(this, mAccelerometer, sensor_delay_microseconds);
+        myReceiver = new AccelerometerReceiver();
+        //myReceiver.setMillisecondsSinceBoot(mMillisecondsSinceBoot);
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(AccelerometerService.MY_ACTION);
+        startService(mAccelerometerIntent);
+        registerReceiver(myReceiver, intentFilter);
     }//onResume
-
-    @Override
-    public void onSensorChanged(SensorEvent event) {
-        if(event.sensor.getType() == Sensor.TYPE_LINEAR_ACCELERATION)
-        {
-            float x = event.values[0];
-            float y = event.values[1];
-            float z = event.values[2];
-
-            Log.d(getLocalClassName(), "Accelerometer readings: X: "+x+" Y: "+y+" Z: "+z);
-        }//if
-
-    }//onSensorChanged
-
-    @Override
-    public void onAccuracyChanged(Sensor sensor, int accuracy) {
-
-    }
 
     public enum ServerStatus{
 		SENSOR_MODEL_SERVER_CONNECTED(4), SENSOR_MODEL_SERVER_DISCONNECTED(0);
@@ -175,7 +164,6 @@ public class WiFiScanActivity extends Activity implements OnClickListener, Senso
 		  }
 		}
 	public ServerStatus mServerConnectionCode;
-	
 
 	/** 
 	 * Called when the activity is first created
@@ -190,6 +178,8 @@ public class WiFiScanActivity extends Activity implements OnClickListener, Senso
 
 		setContentView(R.layout.wifi_scan_layout);
 		Log.d(getLocalClassName(), "Step 3");
+        //mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
+        //mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
 		mStartStopScanButton = (Button) findViewById(R.id.start_scan_button);
 		mStartStopScanButton.setOnClickListener(this);
 		
@@ -216,8 +206,12 @@ public class WiFiScanActivity extends Activity implements OnClickListener, Senso
 		setWiFiScanListData();
 		mWifiScanResultAdapter = new WiFiScanResultAdapter(this, mScanResultsArrayList, application_resources);
 		mScanResultsListView.setAdapter(mWifiScanResultAdapter);
+        mMillisecondsSinceBoot = SystemClock.uptimeMillis();
+        //Start service
+        mAccelerometerIntent = new Intent(this, com.clarkson.sensormodeldatacollector.AccelerometerService.class);
+        Log.d( getLocalClassName(), "onCreate/startService" );
 
-		buildAlertDialogs();
+        buildAlertDialogs();
 		
 		checkServerConnection();
 	}//onCreate
@@ -513,7 +507,7 @@ public class WiFiScanActivity extends Activity implements OnClickListener, Senso
             }
         }, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
         mReceiverRegistered = true;
-    }
+    }//registerWifiScanReceiver
 
     public void unregisterWifiScanReceiver()
     {
@@ -535,7 +529,7 @@ public class WiFiScanActivity extends Activity implements OnClickListener, Senso
             if(mNumberOfScansCounter == 0)
             {
                 //Set time to normalize scan results to if this is the first scan
-                mMillisecondsSinceBoot = SystemClock.uptimeMillis();
+                //mMillisecondsSinceBoot = SystemClock.uptimeMillis();
             }//if
             mScanResultsArrayList.clear();
             mWifiScanResultAdapter.disableItemsSelection();
@@ -798,7 +792,52 @@ public class WiFiScanActivity extends Activity implements OnClickListener, Senso
 		{
 			Log.d(getLocalClassName(), "Step 11B: mWriteToCSVFile set to false or media not mounted for write");
 		}
+        writeAccelerometerDataToFile();
 		return file_written_successfully;
 	}//writeAPDataToCSVFile
+
+    public void writeAccelerometerDataToFile()
+    {
+        if(mAccelerometerReadings.isEmpty() == false) {
+            try {
+                String output_string = "X,Y,Z,Timestamp,(1:N)\n";
+
+                //File output_folder = new File(Environment.getExternalStorageDirectory() + File.separator + "SensorModelDataCollector");
+                //File new_file = new File(getFilesDir() + File.separator + "SensorModelDataCollector");
+                File new_file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS) + File.separator + "SensorModelDataCollector");
+                boolean folder_success = true;
+                if (!new_file.exists()) {
+                    //folder_success = output_folder.mkdir();
+                    folder_success |= new_file.mkdir();
+                }
+
+                if (folder_success == true) {
+                    String output_filename = "AccelerometerReadings" + "_" + (SystemClock.uptimeMillis() - mMillisecondsSinceBoot) + ".csv";
+
+                    //File output_file = new File(output_folder, output_filename);
+                    File output_file = new File(new_file, output_filename);
+                    if (output_file.exists() == false) {
+                        output_file.createNewFile();
+                        //output_file2.createNewFile();
+                    }//if - file doesn't exist, create it
+
+
+                    if (output_file.canWrite() == true) {
+                        FileWriter output_file_writer = new FileWriter(output_file);
+                        output_file_writer.append(output_string);
+                        for (String accelerometerReading : mAccelerometerReadings) {
+                            output_file_writer.append(accelerometerReading);
+                        }//for
+                        output_file_writer.flush();
+                        output_file_writer.close();
+                        mAccelerometerReadings.clear();
+                    }
+                }//if
+            }//try
+            catch (IOException ioe) {
+                ioe.printStackTrace();
+            }
+        }//if
+    }
 
 }

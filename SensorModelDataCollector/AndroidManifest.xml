@@ -12,6 +12,8 @@
   <uses-permission android:name="android.permisson.READ_EXTERNAL_STORAGE" />
 <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 <uses-permission android:name="android.permission.INTERNET" />
+    <uses-feature android:name="android.hardware.sensor.accelerometer" android:required="true" />
+    <uses-feature android:name="android.hardware.sensor.gyroscope" android:required="true" />
     <application
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
@@ -29,8 +31,15 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name="WiFiScanActivity" android:theme="@style/FullscreenTheme" android:screenOrientation="portrait">          
+        <activity android:name="WiFiScanActivity" android:theme="@style/FullscreenTheme" android:screenOrientation="portrait">
+
         </activity>
+        <receiver android:name=".AccelerometerReceiver" android:enabled="true" android:exported="false">
+            <intent-filter>
+                <action android:name="com.clarkson.sensormodeldatacollector.AccelerometerService.MY_ACTION"></action>
+            </intent-filter>
+        </receiver>
+        <service android:name=".AccelerometerService"></service>
     </application>
 
 </manifest>
