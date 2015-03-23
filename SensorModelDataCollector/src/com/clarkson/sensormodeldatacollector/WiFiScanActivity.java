@@ -28,6 +28,7 @@ import android.content.DialogInterface;
 import android.content.Intent;     
 import android.content.IntentFilter;    
 import android.content.res.Resources;
+import android.database.Cursor;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -50,6 +51,12 @@ import android.widget.ListView;
 import android.widget.SimpleAdapter;    
 import android.widget.TextView;    
 import android.widget.Toast;
+import android.database.sqlite.SQLiteDatabase;
+
+//Custom data base entries
+import com.clarkson.sensormodeldatacollector.data.AccelerometerDataReaderContract;
+import com.clarkson.sensormodeldatacollector.data.AccelerometerDataReaderDbHelper;
+import com.clarkson.sensormodeldatacollector.data.AccelerometerDataReaderContract.AccelerometerDataEntry;
 
 /**
  * Wi-Fi Scan Activity.
@@ -119,6 +126,9 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 	
 	public boolean mConnectToServer = false; //Default to not connecting to server
 
+    //Database for Accelerometer Data
+    AccelerometerDataReaderDbHelper mDbHelper;
+
     public WiFiScanActivity()
     {
     }//WifiScanActivity
@@ -162,7 +172,8 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 		  public String toString(){
 		    return String.valueOf(this.connection_status);
 		  }
-		}
+		}//ServerStatus
+    //Server connection status enum
 	public ServerStatus mServerConnectionCode;
 
 	/** 
@@ -209,6 +220,7 @@ public class WiFiScanActivity extends Activity implements OnClickListener
         mMillisecondsSinceBoot = SystemClock.uptimeMillis();
         //Start service
         mAccelerometerIntent = new Intent(this, com.clarkson.sensormodeldatacollector.AccelerometerService.class);
+        mDbHelper = new AccelerometerDataReaderDbHelper(this);
         Log.d( getLocalClassName(), "onCreate/startService" );
 
         buildAlertDialogs();
@@ -216,6 +228,9 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 		checkServerConnection();
 	}//onCreate
 
+    /*
+    Checks the server connection
+     */
 	public void checkServerConnection()
 	{
 		if(mConnectToServer == true)
@@ -493,6 +508,9 @@ public class WiFiScanActivity extends Activity implements OnClickListener
         }//switch
 	}//onClick
 
+    /*
+    Registers the wifi scan broadcast receiver
+     */
     public void registerWifiScanReceiver()
     {
         registerReceiver(mBroadcastReceiver = new BroadcastReceiver()
@@ -509,6 +527,9 @@ public class WiFiScanActivity extends Activity implements OnClickListener
         mReceiverRegistered = true;
     }//registerWifiScanReceiver
 
+    /*
+    Unregisters the wifi scan broadcast receiver
+     */
     public void unregisterWifiScanReceiver()
     {
         unregisterReceiver(mBroadcastReceiver);
@@ -714,12 +735,18 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 		}//if
 	}//onItemClick
 
+    /*
+    Sets member variables that hold the currently selected items attributes
+     */
 	void setItemClickAttributes(int index, String rssString)
 	{
 		mCurrentlySelectedItemIndex = index;
 		mCurrentlySelectedItemRSSString = rssString;
 	}
 
+    /*
+    Writes access point collected data to CSV files
+     */
 	@SuppressLint("SdCardPath")
 	boolean writeAPDataToCSVFile()
 	{
@@ -796,6 +823,9 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 		return file_written_successfully;
 	}//writeAPDataToCSVFile
 
+    /*
+    Writes accelerometer data to file
+     */
     public void writeAccelerometerDataToFile()
     {
         if(mAccelerometerReadings.isEmpty() == false) {
@@ -822,16 +852,55 @@ public class WiFiScanActivity extends Activity implements OnClickListener
                     }//if - file doesn't exist, create it
 
 
-                    if (output_file.canWrite() == true) {
+                    if (output_file.canWrite() == true)
+                    {
                         FileWriter output_file_writer = new FileWriter(output_file);
                         output_file_writer.append(output_string);
-                        for (String accelerometerReading : mAccelerometerReadings) {
-                            output_file_writer.append(accelerometerReading);
-                        }//for
-                        output_file_writer.flush();
-                        output_file_writer.close();
-                        mAccelerometerReadings.clear();
-                    }
+                        //Open up the data base and read off the entries
+                        SQLiteDatabase db = mDbHelper.getReadableDatabase();
+
+                        // Define a projection that specifies which columns from the database
+                        // you will actually use after this query.
+                        String[] projection = {
+                                AccelerometerDataEntry._ID,
+                                AccelerometerDataEntry.COLUMN_NAME_TIMESTAMP,
+                                AccelerometerDataEntry.COLUMN_NAME_X_VALUE,
+                                AccelerometerDataEntry.COLUMN_NAME_Y_VALUE,
+                                AccelerometerDataEntry.COLUMN_NAME_Z_VALUE
+                        };
+
+                        // How you want the results sorted in the resulting Cursor
+                        String sortOrder =
+                                AccelerometerDataEntry.COLUMN_NAME_TIMESTAMP + " DESC";
+
+                        Cursor query_results = db.query(
+                                AccelerometerDataEntry.TABLE_NAME,  // The table to query
+                                projection,                               // The columns to return
+                                "*",                                // The columns for the WHERE clause
+                                null,                            // The values for the WHERE clause
+                                null,                                     // don't group the rows
+                                null,                                     // don't filter by row groups
+                                sortOrder                                 // The sort order
+                        );
+                        query_results.moveToFirst();
+                        if(query_results.getCount() > 0)
+                        {
+                            for (int i = 0; i < query_results.getCount(); ++i) {
+                                long entry_id = query_results.getLong(query_results.getColumnIndexOrThrow(AccelerometerDataEntry._ID));
+                                String timestamp = query_results.getString(query_results.getColumnIndexOrThrow(AccelerometerDataEntry.COLUMN_NAME_TIMESTAMP));
+                                String x_value = query_results.getString(query_results.getColumnIndexOrThrow(AccelerometerDataEntry.COLUMN_NAME_X_VALUE));
+                                String y_value = query_results.getString(query_results.getColumnIndexOrThrow(AccelerometerDataEntry.COLUMN_NAME_Y_VALUE));
+                                String z_value = query_results.getString(query_results.getColumnIndexOrThrow(AccelerometerDataEntry.COLUMN_NAME_Z_VALUE));
+                                String accelerometerReading = entry_id + "," + timestamp + "," + x_value + "," + y_value + "," + z_value + "\n";
+                                output_file_writer.append(accelerometerReading);
+                            }//for
+                            output_file_writer.flush();
+                            output_file_writer.close();
+                            //Delete everything from the database
+                            db.delete(AccelerometerDataEntry.TABLE_NAME, "*", null);
+                        }//if
+                        db.close();
+                    }//if
                 }//if
             }//try
             catch (IOException ioe) {
