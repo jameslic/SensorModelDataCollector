@@ -24,6 +24,6 @@
         android:layout_height="wrap_content"
         android:text="@string/perform_scan"
         android:layout_gravity="center_horizontal"
-        android:nestedScrollingEnabled="true" />
+         />
 
 </LinearLayout>

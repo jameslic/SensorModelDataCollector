@@ -4,16 +4,18 @@ public class TimestampedRSS implements Comparable<Object>
 {
 	 public int mReceivedSignalStrength_dBm;
     public long mTimestamp;
+	public String mLocalTime;
    
     public TimestampedRSS()
     {
     	mReceivedSignalStrength_dBm = 0;
     	mTimestamp = 0;
     }
-	public TimestampedRSS(int mReceivedSignalStrength_dBm, long mTimestamp) {
+	public TimestampedRSS(int mReceivedSignalStrength_dBm, long mTimestamp, String localTime) {
 		super();
 		this.mTimestamp = mTimestamp;
 		this.mReceivedSignalStrength_dBm = mReceivedSignalStrength_dBm;
+		this.mLocalTime = localTime;
 	}
 	
 	@Override
@@ -49,6 +51,14 @@ public class TimestampedRSS implements Comparable<Object>
 	public void setReceivedSignalStrength(int mReceivedSignalStrength) {
 		this.mReceivedSignalStrength_dBm = mReceivedSignalStrength;
 	}
+	public String getLocalTime()
+	{
+		return mLocalTime;
+	}
+	public void setLocalTime(String localTime)
+	{
+		mLocalTime = localTime;
+	}
 	
 	@Override
 	public int compareTo(Object anotherTimestampedRSS) {
@@ -66,6 +76,6 @@ public class TimestampedRSS implements Comparable<Object>
 	
 	public String rssTimestampPair()
 	{
-		return String.valueOf(mReceivedSignalStrength_dBm)+"," + String.valueOf(mTimestamp);
-	}
+		return String.valueOf(mReceivedSignalStrength_dBm)+"," + String.valueOf(mTimestamp) + "," + mLocalTime;
+	}//rssTimestampPair
 }

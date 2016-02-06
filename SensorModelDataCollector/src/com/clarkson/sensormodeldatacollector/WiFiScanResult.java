@@ -39,11 +39,11 @@ public class WiFiScanResult implements Comparable<Object>{
 			} else if (!mSSID.equals(other.mSSID))
 				return false;
 			return true;
-		}
+		}//equals
 
 		public String getSSID() {
 	        return mSSID;
-	    }
+	    }//getSSID
 
 	    public void setSSID(String name) {
 	        this.mSSID = name;
@@ -90,8 +90,8 @@ public class WiFiScanResult implements Comparable<Object>{
 	    	return mTimestampedRSSValues;
 	    }
 
-	    public void setRSS(int rss, long timestamp) {
-	    	mTimestampedRSSValues.add(new TimestampedRSS(rss, timestamp));
+	    public void setRSS(int rss, long timestamp, String localTime) {
+	    	mTimestampedRSSValues.add(new TimestampedRSS(rss, timestamp, localTime));
 	        //this.mReceivedSignalStrength_dBm = rss;
 	    }
 	    

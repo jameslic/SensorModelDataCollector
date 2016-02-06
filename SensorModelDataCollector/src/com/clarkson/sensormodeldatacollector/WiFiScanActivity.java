@@ -8,9 +8,12 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.URL;
 import java.net.URLConnection;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;    
+import java.util.Date;
+import java.util.GregorianCalendar;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;    
@@ -18,6 +21,7 @@ import java.util.Queue;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.Calendar;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -73,7 +77,7 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 	//The wifi manager provides the system level API calls to the wifi hardware
 	WifiManager mWifiManager;
 	Bundle mMainMenuExtras;
-    AccelerometerReceiver myReceiver=null;
+    //AccelerometerReceiver myReceiver=null;
 	//Member variable to hold the AP count for a given scan
 	int mWifiManagerScanResultsCount = 0;
 	//List member variable to store wifi scan results
@@ -96,7 +100,7 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 
 	public int mCurrentlySelectedItemIndex = -1;
 	public String mCurrentlySelectedItemRSSString = "";
-    Intent mAccelerometerIntent;
+    //Intent mAccelerometerIntent;
 	final int NUMBER_DEFAULT_SCAN_ITEMS = 2;
 	private final String mDefaultServerURL = "http://192.168.1.6:9999/SensorModelServletProject/SensorModelServlet";
 	//Historical hashmap to continue to collect RSS values for APs we encounter in multiple scans
@@ -127,7 +131,7 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 	public boolean mConnectToServer = false; //Default to not connecting to server
 
     //Database for Accelerometer Data
-    AccelerometerDataReaderDbHelper mDbHelper;
+    //AccelerometerDataReaderDbHelper mDbHelper;
 
     public WiFiScanActivity()
     {
@@ -137,8 +141,8 @@ public class WiFiScanActivity extends Activity implements OnClickListener
     {
         super.onPause();
         //mSensorManager.unregisterListener(this);
-        stopService(mAccelerometerIntent);
-        if (myReceiver != null)unregisterReceiver(myReceiver);
+        //stopService(mAccelerometerIntent);
+        //if (myReceiver != null)unregisterReceiver(myReceiver);
     }//onPause
 
     protected void onResume()
@@ -148,12 +152,12 @@ public class WiFiScanActivity extends Activity implements OnClickListener
         //Make sensor delay 1 second
         //int sensor_delay_microseconds = 1000 * 1000;
         //mSensorManager.registerListener(this, mAccelerometer, sensor_delay_microseconds);
-        myReceiver = new AccelerometerReceiver();
+        //myReceiver = new AccelerometerReceiver();
         //myReceiver.setMillisecondsSinceBoot(mMillisecondsSinceBoot);
-        IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(AccelerometerService.MY_ACTION);
-        startService(mAccelerometerIntent);
-        registerReceiver(myReceiver, intentFilter);
+        //IntentFilter intentFilter = new IntentFilter();
+        //intentFilter.addAction(AccelerometerService.MY_ACTION);
+        //startService(mAccelerometerIntent);
+        //registerReceiver(myReceiver, intentFilter);
     }//onResume
 
     public enum ServerStatus{
@@ -219,9 +223,9 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 		mScanResultsListView.setAdapter(mWifiScanResultAdapter);
         mMillisecondsSinceBoot = SystemClock.uptimeMillis();
         //Start service
-        mAccelerometerIntent = new Intent(this, com.clarkson.sensormodeldatacollector.AccelerometerService.class);
-        mDbHelper = new AccelerometerDataReaderDbHelper(this);
-        Log.d( getLocalClassName(), "onCreate/startService" );
+        //mAccelerometerIntent = new Intent(this, com.clarkson.sensormodeldatacollector.AccelerometerService.class);
+        //mDbHelper = new AccelerometerDataReaderDbHelper(this);
+        //Log.d( getLocalClassName(), "onCreate/startService" );
 
         buildAlertDialogs();
 		
@@ -479,7 +483,7 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 			
 			Log.d(getLocalClassName(), "SystemClock: "+mMillisecondsSinceBoot);
 			default_wifi_scan_result.setSSID("Test SSID#"+i);
-			default_wifi_scan_result.setRSS(i, mMillisecondsSinceBoot);
+			default_wifi_scan_result.setRSS(i, mMillisecondsSinceBoot, getCurrentTimeString());
 			//dummy_item.setFrequency(i*1000);
 
 			//Add default item to the array list
@@ -648,7 +652,7 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 		//Alert user what the current scan number is so he/she knows wifi scans are continuing to complete successfully
 		Toast.makeText(this, "Scanning...Scan #"+mNumberOfScansCounter, Toast.LENGTH_SHORT).show();
 		//Log our current scan count
-		Log.d(getLocalClassName(), "STEP 5A: scan #"+mNumberOfScansCounter);
+		Log.d(getLocalClassName(), "STEP 5A: scan #" + mNumberOfScansCounter);
 		try 
 		{
 			//Scan results are 0 indexed, so subtract one for our while
@@ -663,13 +667,13 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 				//Set the SSID (Name) for the scan result
 				scan_result_item.setSSID(mWifiManagerScanResults.get(mWifiManagerScanResultsCount).SSID);
 				//Set the RSS (signal strength level) and timestamp normalized to program start time
-				scan_result_item.setRSS(mWifiManagerScanResults.get(mWifiManagerScanResultsCount).level, SystemClock.uptimeMillis()-mMillisecondsSinceBoot);
+				scan_result_item.setRSS(mWifiManagerScanResults.get(mWifiManagerScanResultsCount).level, SystemClock.uptimeMillis()-mMillisecondsSinceBoot, getCurrentTimeString());
 				//Set the BSSID (Mac Address)
 				scan_result_item.setMac_address(mWifiManagerScanResults.get(mWifiManagerScanResultsCount).BSSID);
 				//Set the frequency
-				scan_result_item.setFrequency(mWifiManagerScanResults.get(mWifiManagerScanResultsCount).frequency);                
+				scan_result_item.setFrequency(mWifiManagerScanResults.get(mWifiManagerScanResultsCount).frequency);
 				//Log the scan result fields
-				Log.d(getLocalClassName(), "STEP 5B: " + scan_result_item.printMe());
+				//Log.d(getLocalClassName(), "STEP 5B: " + scan_result_item.printMe());
 				//Add the scan result item to the results Array List only if matches SSID filter
                 if(this.mSSIDFilterEnabled == true) {
                     Log.d(getLocalClassName(), "SSID: " + scan_result_item.getSSID());
@@ -754,22 +758,25 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 		WiFiScanResult selected_AP_scan_result_data = ( WiFiScanResult ) mScanResultsArrayList.get(mCurrentlySelectedItemIndex);
 		if(mWriteToCSVFile == true && Environment.getExternalStorageState() != Environment.MEDIA_MOUNTED_READ_ONLY)        
 		{
-			try {
-				String output_string="SSID,Channel,Frequency,MAC,RSS,Timestamp,(1:N)\n";
+			try
+            {
+				String column_header_string="SSID,Channel,Frequency,MAC,RSS,Timestamp,Local Time\n";
 				Log.d(getLocalClassName(), "Step 11A: Logging to CSV file");
 
 				//File output_folder = new File(Environment.getExternalStorageDirectory() + File.separator + "SensorModelDataCollector");
                 //File new_file = new File(getFilesDir() + File.separator + "SensorModelDataCollector");
                 File new_file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS) + File.separator + "SensorModelDataCollector");
                 boolean folder_success = true;
-				if (!new_file.exists()) {
+				if (!new_file.exists())
+                {
 					//folder_success = output_folder.mkdir();
                     folder_success |= new_file.mkdir();
-				}
+				}//if
 
 				if(folder_success == true)
 				{
-					String output_filename = selected_AP_scan_result_data.mSSID+"_"+selected_AP_scan_result_data.getLatestTimestampedRSS().mTimestamp+".csv";
+
+					String output_filename = selected_AP_scan_result_data.mSSID+"_"+selected_AP_scan_result_data.getLatestTimestampedRSS().mTimestamp+"_"+ getCurrentDateString() + ".csv";
 
 					//File output_file = new File(output_folder, output_filename);
                     File output_file = new File(new_file, output_filename);
@@ -783,11 +790,11 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 					if(output_file.canWrite() == true)
 					{
 						FileWriter output_file_writer = new FileWriter(output_file);
-
-						output_string += selected_AP_scan_result_data.mSSID + ",";
-						output_string += selected_AP_scan_result_data.channel + ",";
-						output_string += selected_AP_scan_result_data.frequency_MHz + ",";
-						output_string += selected_AP_scan_result_data.getMac_address() + ",";
+                        output_file_writer.append(column_header_string);
+						String data_row_output_string = selected_AP_scan_result_data.mSSID + ",";
+                        data_row_output_string += selected_AP_scan_result_data.channel + ",";
+                        data_row_output_string += selected_AP_scan_result_data.frequency_MHz + ",";
+                        data_row_output_string += selected_AP_scan_result_data.getMac_address() + ",";
 						Queue<TimestampedRSS> all_rss_values = selected_AP_scan_result_data.getAllRSS();
 						String rss_string = "";
 						Iterator<TimestampedRSS> rss_iterator = all_rss_values.iterator();
@@ -795,38 +802,51 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 						while (rss_iterator.hasNext() == true)
 						{
 							Log.d(getLocalClassName(), "Step 10A: RSS Strings Assembled");
-							rss_string = rss_string + rss_iterator.next().rssTimestampPair() + ",";        	
-						}
-						output_string += rss_string + "\n";
-
-						Log.d(getLocalClassName(), "Step 10C: "+output_string);
-						output_file_writer.append(output_string);
+							rss_string = rss_iterator.next().rssTimestampPair();
+							output_file_writer.append(data_row_output_string + rss_string + "\n");
+						}//while
 						output_file_writer.flush();
 						output_file_writer.close();
 						file_written_successfully = true;
-					}
+					}//if
 					else
 					{
 						Log.d(getLocalClassName(), "Step 10C: No file write access permission");
-					}
-				}
-			}
+					}//else
+				}//if
+			}//try
 			catch (IOException ioe) 
 			{ioe.printStackTrace();}
-		}    
-
+		}//if
 		else
 		{
 			Log.d(getLocalClassName(), "Step 11B: mWriteToCSVFile set to false or media not mounted for write");
-		}
-        writeAccelerometerDataToFile();
+		}//else
+        //writeAccelerometerDataToFile();
 		return file_written_successfully;
 	}//writeAPDataToCSVFile
+
+
+    private static String getCurrentDateString()
+    {
+        Date current_date = new Date();
+        SimpleDateFormat sdf1 = new SimpleDateFormat("yyyyMMdd");
+
+        String current_date_string = sdf1.format(current_date) + "_" + getCurrentTimeString();
+        return current_date_string;
+    }//getCurrentDateString
+
+    private static String getCurrentTimeString()
+    {
+        Date current_date = new Date();
+        SimpleDateFormat time_format = new SimpleDateFormat("HHmmss");
+        return time_format.format(current_date);
+    }//getCurrentTimeString
 
     /*
     Writes accelerometer data to file
      */
-    public void writeAccelerometerDataToFile()
+   /* public void writeAccelerometerDataToFile()
     {
         if(mAccelerometerReadings.isEmpty() == false) {
             try {
@@ -907,6 +927,6 @@ public class WiFiScanActivity extends Activity implements OnClickListener
                 ioe.printStackTrace();
             }
         }//if
-    }
+    }*/
 
 }

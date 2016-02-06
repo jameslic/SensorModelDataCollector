@@ -68,7 +68,6 @@
         android:textColor="#FF000000"
         android:gravity="bottom|right"
         android:layout_marginTop="75dp"
-        android:textAlignment="gravity"
         android:textSize="@android:dimen/app_icon_size"
         android:text="CiscoLinksys"
         android:textStyle="italic"
@@ -87,7 +86,7 @@
         android:textColor="#ff000000"
         android:layout_marginTop="125dp"
         android:textSize="@android:dimen/app_icon_size"
-        android:textAlignment="center" />
+        />
 
     <TextView
         android:id="@+id/timer_seconds_label"
