@@ -30,9 +30,14 @@ import android.content.BroadcastReceiver;
 import android.content.Context;    
 import android.content.DialogInterface;
 import android.content.Intent;     
-import android.content.IntentFilter;    
+import android.content.IntentFilter;
+import android.content.pm.ActivityInfo;
+import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Point;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -44,10 +49,13 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.SystemClock;
-import android.util.Log;   
-import android.view.View;    
-import android.view.View.OnClickListener;    
-import android.widget.AdapterView;    
+import android.util.Log;
+import android.view.Display;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.WindowManager;
+import android.widget.AdapterView;
 import android.widget.Button;    
 import android.widget.CheckBox;
 import android.widget.EditText;
@@ -76,7 +84,17 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 {      
 	//The wifi manager provides the system level API calls to the wifi hardware
 	WifiManager mWifiManager;
+	SensorManager mSensorManager;
+	Sensor mMagnetometerSensor;
 	Bundle mMainMenuExtras;
+
+    private SketchView sketchView = null;
+    private Orientation magnetometerAnalyzer = null;
+    private ProgramState programState = null;
+    private MenuManager menuManager = null;
+    private Storage storage = null;
+    private Movement movement = null;
+
     //AccelerometerReceiver myReceiver=null;
 	//Member variable to hold the AP count for a given scan
 	int mWifiManagerScanResultsCount = 0;
@@ -180,7 +198,131 @@ public class WiFiScanActivity extends Activity implements OnClickListener
     //Server connection status enum
 	public ServerStatus mServerConnectionCode;
 
-	/** 
+    public Bitmap getBitmapResource(int index)
+    {
+        try {
+            final int addressOffset = 0x7f020000;
+            Bitmap bit = BitmapFactory.decodeResource(this.getResources(), addressOffset + index);
+            return bit;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private void setupSketchView() {
+        // creating view
+        if (sketchView == null)
+            sketchView = new SketchView(getApplicationContext());
+        // setting view fields
+        WindowManager wm = (WindowManager)getSystemService(WINDOW_SERVICE);
+        Display display = wm.getDefaultDisplay();
+        Point displaySize = new Point();
+
+        // Our application only supports drawing to portrait canvas orientation
+        if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT)
+            sketchView.setBeginDrawing(true);
+        else
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+
+        // get display size for aspect ratio
+        try {
+            display.getSize(displaySize);
+        } catch (java.lang.NoSuchMethodError ex) { // Older device
+            displaySize.x = display.getWidth();
+            displaySize.y = display.getHeight();
+
+            // account for orientation change
+            int min = Math.min(displaySize.x, displaySize.y);
+            int max = Math.max(displaySize.x, displaySize.y);
+            displaySize = new Point(min, max);
+            displaySize.y += displaySize.x * 0.16; // fix for status bar height in older API
+        }
+
+        float aspectRatio = (float)displaySize.y / (float)displaySize.x;
+
+        sketchView.setAspectRatio(aspectRatio);
+        sketchView.setBitmapArrow(getBitmapResource(0));
+
+        //setContentView(sketchView);
+    }
+
+    private void beginCalibrationStateMonitoring() {
+
+        new Thread() {
+            public void run() {
+                while (true) {
+                    try {
+                        programState.checkCalibrationStateChange();
+                        Thread.sleep(100);
+                    } catch (InterruptedException e) {
+                    }
+                }
+            }
+        }.start();
+
+    }
+
+    private void beginMovementStateMonitoring() {
+
+        new Thread() {
+            public void run() {
+                while (true) {
+                    try {
+                        programState.checkMovementState();
+                        Thread.sleep(100);
+                    } catch (InterruptedException e) {
+                    }
+                }
+            }
+        }.start();
+
+    }
+
+    private void beginExportPathBitmapMonitoring() {
+
+        new Thread() {
+            public void run() {
+                while (true) {
+                    try {
+                        programState.checkExportBitmapState();
+                        Thread.sleep(100);
+                    } catch (InterruptedException e) {
+                    }
+                }
+            }
+        }.start();
+
+    }
+
+    private void setupUiInteraction() {
+
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
+        sketchView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (event.getAction() == MotionEvent.ACTION_DOWN) {
+
+                    float[] coords = {event.getX(), event.getY()};
+
+                    if (menuManager.getIsMenuVisible())
+                        menuManager.menuProcessEvents(coords);
+                    else {
+                        if (programState.getProgramState() != ProgramState.State.STATE_CALIBRATION &&
+                                programState.getProgramState() != ProgramState.State.STATE_EXPORT_MOVEMENT_PATH
+                                )
+                            programState.setProgramState(ProgramState.State.STATE_PAUSE_WITH_MENU);
+                    }
+
+                    sketchView.invalidate();
+                }
+                return true;
+            }
+        });
+
+    }
+
+    /**
 	 * Called when the activity is first created
 	 * 
 	 * This method is basically the "constructor" for the activity.
@@ -201,6 +343,44 @@ public class WiFiScanActivity extends Activity implements OnClickListener
 		mScanResultsListView = (ListView)findViewById(R.id.AP_list);
 
 		mMainMenuExtras = getIntent().getExtras();
+		mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
+		mMagnetometerSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+		if(mMagnetometerSensor == null)
+		{
+			Toast.makeText(getApplicationContext(), "Magnetometer unavailable", Toast.LENGTH_LONG).show();
+		}//if
+        setupSketchView();
+        magnetometerAnalyzer = new Orientation(sketchView);
+        mSensorManager.registerListener(magnetometerAnalyzer, mMagnetometerSensor, SensorManager.SENSOR_DELAY_FASTEST);
+
+        storage = new Storage(magnetometerAnalyzer, this);
+        storage.loadCalibrationData();
+
+        movement = new Movement(magnetometerAnalyzer);
+        sketchView.setMovementObject(movement);
+
+        programState = new ProgramState(sketchView, magnetometerAnalyzer, storage, movement);
+
+        menuManager = new MenuManager(programState);
+        menuManager.setBitmapMenuArrow(getBitmapResource(2));
+        menuManager.setBitmapMenuButton(getBitmapResource(3));
+
+
+        sketchView.setMenuManager(menuManager);
+
+        programState.setMenuManager(menuManager);
+        programState.setProgramState(ProgramState.State.STATE_PAUSE_WITH_MENU);
+
+        setupUiInteraction();
+
+        sketchView.invalidate();
+
+        beginCalibrationStateMonitoring();
+
+        beginMovementStateMonitoring();
+
+        beginExportPathBitmapMonitoring();
+
 		if(mMainMenuExtras != null)
 		{
 			mConnectToServer = mMainMenuExtras.getBoolean("mConnectToServer");
